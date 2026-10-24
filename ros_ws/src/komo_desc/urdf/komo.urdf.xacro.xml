@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org" name="komo">
+
+  <!-- XACRO Properties + Macros -->
+  <xacro:property name="robotname" value="neos" />
+  <xacro:property name="width" value="0.5" />
+  <xacro:property name="length" value="0.5" />
+  <xacro:property name="height" value="1.2" />
+  <xacro:property name="mass" value="5.0" />
+  <xacro:property name="wheel_len" value="0.2" />
+  <xacro:property name="wheel_rad" value="0.02" />
+
+  <!-- Macro for wheel (not finished) -->
+  <xacro:macro name="wheel" params="prefix">
+    <link name="${prefix}_wheel">
+      <visual>
+        <geometry>
+          <cylinder length="${wheel_len}" radius="${wheel_radius}"/>
+        </geometry>
+      </visual>
+    </link>
+  </xacro:macro>
+
+  <!-- Base Link (The Chassis) -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${width} ${length} ${height}"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="${width} ${length} ${height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+  </link>
+
+  <!-- Example Right Wheel Link -->
+  <link name="right_wheel">
+    <visual>
+      <geometry>
+        <cylinder length="0.05" radius="0.1"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Joint connecting Wheel to Chassis -->
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <origin xyz="0.2 -0.25 -0.05" rpy="1.5708 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+</robot>
