@@ -34,7 +34,7 @@ def generate_launch_description():
     spawn = Node(
         package='ros_gz_sim',
         executable='create',
-        arguments=['-topic', 'robot_description', '-name', 'komo_robot', '-z', '0.2'])
+        arguments=['-topic', 'robot_description', '-name', 'komo_robot', '-z', '0.72'])
 
     # Copies messages between ROS 2 topics and Gazebo topics
     # /clock: the simulation time, from Gazebo to ROS ([)
