@@ -5,7 +5,7 @@ find_package(ament_cmake REQUIRED) # Loads the ament_cmake tools which are ROS 2
 
 # Copy the xacro file into DEST directory
 install(
-  FILES ros_ws/src/komo_desc/urdf/komo.urdf.xacro
+  FILES ros_ws/src/komo_desc/urdf/komo.urdf.xacro.xml
   DESTINATION share/${PROJECT_NAME}/urdf
 )
 

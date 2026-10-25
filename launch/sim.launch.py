@@ -11,7 +11,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 # 'ros2 launch' looks for a function with exactly this name and calls it
 def generate_launch_description():
     pkg = get_package_share_directory('komo_robotics_sim')    # Looks up komo_robotics_sim and returns /workspace/install/komo_robotics_sim/share/komo_robotics_sim
-    xacro_file = os.path.join(pkg, 'urdf', 'komo.urdf.xacro') # Appends urdf/komo_urdf.xacro to path
+    xacro_file = os.path.join(pkg, 'urdf', 'komo.urdf.xacro.xml') # Appends urdf/komo_urdf.xacro to path
 
     # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
