@@ -16,10 +16,10 @@ def generate_launch_description():
     # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
-    # Runs cmd 'ign gazebo -r empty.sdf' -r starts the simulation running, and empty.sdf is a built-in world
+    # Runs cmd 'ign gazebo -r worldname' -r starts the simulation running, and worldname is the world file loaded
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items())
+        launch_arguments={'gz_args': f'-r {os.path.join(pkg, "worlds", "hallway.sdf")}'}.items())
 
     # Starts the robot_state_publisher program from the package of the same name
     # robot_description: the URDF text. The program publishes it on the /robot_description topic

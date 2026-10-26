@@ -9,9 +9,9 @@ install(
   DESTINATION share/${PROJECT_NAME}/urdf
 )
 
-# Copy the launch folder into DEST
+# Copy the launch and worlds (gazebo sim world) folder into DEST
 install(
-  DIRECTORY launch
+  DIRECTORY launch worlds
   DESTINATION share/${PROJECT_NAME}
 )
 
