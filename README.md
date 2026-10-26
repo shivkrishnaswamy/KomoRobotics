@@ -6,7 +6,7 @@ One terminal -> `docker compose run --rm ros2_gazebo` or if the Dockerfile has c
 Multiple terminals in same container -> `docker compose up -d` once then `docker compose exec ros2_gazebo bash` in each terminal
 
 
-
+```
 docker compose up -d --build
 docker compose exec ros2_gazebo bash
 cd /workspace
@@ -14,7 +14,9 @@ colcon build --symlink-install
 source install/setup.bash
 ros2 launch komo_robotics_sim sim.launch.py
 
+In a secondary terminal
 docker compose exec ros2_gazebo bash
 cd /workspace
 source install/setup.bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
