@@ -10,15 +10,49 @@
   <xacro:property name="wheel_len" value="0.2" />
   <xacro:property name="wheel_rad" value="0.02" />
 
-  <!-- Macro for wheel (not finished) -->
-  <xacro:macro name="wheel" params="prefix">
-    <link name="${prefix}_wheel">
+ <!--
+    Wheel macro.
+    prefix : name prefix, e.g. "left_" or "robot1_front_left_"
+    parent : parent link name
+    xyz/rpy: wheel joint origin relative to parent
+    The wheel spins about its own Y axis (cylinder rotated 90 deg about X).
+  -->
+  <xacro:macro name="wheel" params="prefix parent xyz rpy:='0 0 0' radius:=0.05 width:=0.03 mass:=0.2">
+
+    <link name="${prefix}wheel_link">
       <visual>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
         <geometry>
-          <cylinder length="${wheel_len}" radius="${wheel_radius}"/>
+          <cylinder radius="${radius}" length="${width}"/>
         </geometry>
+        <material name="${prefix}wheel_mat">
+          <color rgba="0.1 0.1 0.1 1.0"/>
+        </material>
       </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${width}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass value="${mass}"/>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <inertia ixx="${mass*(3*radius*radius + width*width)/12}" ixy="0" ixz="0"
+                 iyy="${mass*(3*radius*radius + width*width)/12}" iyz="0"
+                 izz="${mass*radius*radius/2}"/>
+      </inertial>
     </link>
+
+    <joint name="${prefix}wheel_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="${prefix}wheel_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
   </xacro:macro>
 
   <!-- Base Link (The Chassis) -->
@@ -39,21 +73,7 @@
     </inertial>
   </link>
 
-  <!-- Example Right Wheel Link -->
-  <link name="right_wheel">
-    <visual>
-      <geometry>
-        <cylinder length="0.05" radius="0.1"/>
-      </geometry>
-    </visual>
-  </link>
-
-  <!-- Joint connecting Wheel to Chassis -->
-  <joint name="right_wheel_joint" type="continuous">
-    <parent link="base_link"/>
-    <child link="right_wheel"/>
-    <origin xyz="0.2 -0.25 -0.05" rpy="1.5708 0 0"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:wheel prefix="left_"  parent="base_link" xyz="0  0.15 0"/>
+  <xacro:wheel prefix="right_" parent="base_link" xyz="0 -0.15 0"/>
 
 </robot>
