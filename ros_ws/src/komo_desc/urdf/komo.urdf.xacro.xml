@@ -9,6 +9,7 @@
   <xacro:property name="mass" value="5.0" />
   <xacro:property name="wheel_len" value="0.2" />
   <xacro:property name="wheel_rad" value="0.02" />
+  <xacro:property name="PI" value="3.14159265359" />
 
  <!--
     Wheel macro.
