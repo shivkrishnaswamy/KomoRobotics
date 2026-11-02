@@ -15,6 +15,7 @@ services:
       - DISPLAY=${DISPLAY} # Passes your screen display details to the container for Gazebo GUI
       - QT_X11_NO_MITSHM=1 # Disables X11 extension that Qt apps like Gazebo's GUI often has trouble with inside containers
       - ROS_DOMAIN_ID=0    # Sets ROS2 domain for node discovery
+      - XAUTHORITY=/tmp/.Xauthority #Tell X11 to find authorization find inside the container 
 
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw  # Mounts the X11 graphics socket so Gazebo can open a 3D window (linux host only)
