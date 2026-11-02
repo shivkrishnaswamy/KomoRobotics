@@ -30,7 +30,7 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])
 
     # Reads /robot_description and spawns the robot into Gazebo world
-    # -z 0.2: spawn 0.2 m above the ground, so the robot drops onto the floor
+    # -z 0.72: spawn robot above the ground so it drops onto the floor
     spawn = Node(
         package='ros_gz_sim',
         executable='create',
