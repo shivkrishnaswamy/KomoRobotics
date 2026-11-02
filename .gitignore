@@ -70,3 +70,5 @@ Testing/
 # colcon generated
 install/
 log/
+
+.vscode/
