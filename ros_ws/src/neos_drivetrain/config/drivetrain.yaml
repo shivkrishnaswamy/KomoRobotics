@@ -1,0 +1,8 @@
+drivetrain_node:
+  ros__parameters:
+    input_topic: drivetrain/cmd_vel # Where teleop/autonomy publish commands
+    output_topic: cmd_vel           # What the drivetrain listens to (bridged to Gazebo in sim)
+    max_linear_vel: 0.5             # m/s
+    max_angular_vel: 1.0            # rad/s
+    cmd_timeout: 0.5                # s without a command before sending zero velocity
+    publish_rate: 20.0              # Hz
