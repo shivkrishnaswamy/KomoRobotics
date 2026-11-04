@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>komo_robotics_sim</name>
+  <name>neos_sim</name>
   <version>0.0.1</version>
   <description>Komo Robotics robot simulation</description>
   <maintainer email="help@unemployed.com">you</maintainer>

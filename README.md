@@ -12,7 +12,7 @@ docker compose up -d --build
 docker compose exec ros2_gazebo bash
 colcon build --symlink-install
 source install/setup.bash
-ros2 launch komo_robotics_sim sim.launch.py
+ros2 launch neos_sim sim.launch.py
 ```
 In a secondary terminal, run these commands
 ```

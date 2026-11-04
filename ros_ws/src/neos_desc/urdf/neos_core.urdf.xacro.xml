@@ -1,28 +1,23 @@
 <?xml version="1.0"?>
 <!--
   NEOS CORE DESCRIPTION
-  The physical robot: chassis, drive wheels, casters, and the macros that build them.
-  Per-link Gazebo settings (friction, colors) are kept here inside each part's macro, so adding a part is one line.
-  The DiffDrive plugin lives in gazebo_plugin.urdf.xacro.xml.
-  Included by the master file neos.urdf.xacro.xml.
+
+  The physical robot: chassis, drive wheels, and casters
+
+  Frame convention: +x = forward, +y = left, +z = up (REP-103)
+  base_link sits at the center of the bottom face of the body box.
+
+  Side view (x to the right):            Top view (x up):
+
+        +===========+                     c===========c      c = caster
+        |           |                     |           |
+        |   body    |                   [W]   body    [W]    W = drive wheel
+        |           |                     |           |
+        +===========+                     c===========c
+        c    (W)    c
 -->
+
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-
-  <!--
-    Frame conventions (REP-103):
-      +x = forward, +y = left, +z = up
-    base_link sits at the geometric center of the body box.
-
-    Side view (x to the right):            Top view (x up):
-
-          +===========+                     c===========c      c = caster
-          |           |                     |           |
-          |   body    |                   [W]   body    [W]    W = drive wheel
-          |           |                     |           |
-          +===========+                     c===========c
-          c    (W)    c
-     ______________________  ground
-  -->
 
   <!-- ===================== PROPERTIES ===================== -->
   <xacro:property name="PI" value="3.14159265359" />
@@ -38,25 +33,21 @@
   <xacro:property name="wheel_width"  value="0.04" />
   <xacro:property name="wheel_mass"   value="0.5" />
   <xacro:property name="wheel_gap"    value="0.01" />  <!-- space between body side and wheel -->
-  <!-- Wheel center sits just outside the body on each side -->
   <xacro:property name="wheel_y" value="${width/2 + wheel_gap + wheel_width/2}" />
-  <!-- Distance between the two wheel centers (the DiffDrive plugin needs this) -->
   <xacro:property name="wheel_separation" value="${2*wheel_y}" />
 
-  <!-- CASTER WHEELS (FRICTIONLESS) -->
-  <!-- Real casters are 4 in dia x 1.2 in thick. Modeled as 10 cm spheres so they slide/turn freely in sim -->
+  <!-- CASTER WHEELS -->
+  <!-- Real casters are 4 in dia x 1.2 in thick. Modeled as frictionless spheres so they slide/turn freely in sim -->
   <xacro:property name="caster_radius" value="0.05" />
   <xacro:property name="caster_mass"   value="0.1" />
-  <!-- Caster center distance in from each body edge: radius + 1 cm, so the caster stays fully under the body -->
+  <!-- Caster center distance in from each body edge (so it stays fully under the body) -->
   <xacro:property name="caster_inset"  value="${caster_radius + 0.01}" />
-  <!--
-    Casters are lifted a few mm above the ground. With 2 drive wheels + 4 casters, all six contacts can't share the weight evenly.
-    If every caster touches, the drive wheels can end up carrying almost no load and slip. With the small lift, the drive wheels
-    always carry the weight, and the casters only catch the robot when it rocks forward or back.
-  -->
+  <xacro:property name="caster_x" value="${length/2 - caster_inset}" />
+  <xacro:property name="caster_y" value="${width/2 - caster_inset}" />
+  <!-- Casters are lifted a few mm above the ground so drive wheels always carry the weight -->
   <xacro:property name="caster_lift"   value="0.003" />
 
-  <!-- COLORS (r g b a, 0 to 1). Used by both Gazebo (<gazebo reference> blocks) and RViz (URDF <material>) -->
+  <!-- COLOURS (r g b a, 0 to 1). Used by each part's URDF <material> -->
   <xacro:property name="body_color"   value="1.0 1.0 1.0 1.0" />    <!-- white -->
   <xacro:property name="wheel_color"  value="0.1 0.3 0.9 1.0" />    <!-- blue -->
   <xacro:property name="caster_color" value="0.05 0.05 0.05 1.0" /> <!-- black -->
@@ -64,49 +55,19 @@
   <!-- VERTICAL LAYOUT -->
   <xacro:property name="ground_clearance" value="${2*caster_radius}" />   <!-- Gap between body bottom and floor -->
   <xacro:property name="height" value="${total_robot_height - ground_clearance}" />   <!-- Body box height -->
-  <xacro:property name="ground_z" value="${-height/2 - ground_clearance}" />   <!-- z of the floor, relative to base_link (body center) -->
+  <xacro:property name="ground_z" value="${-ground_clearance}" />   <!-- z of the floor, relative to base_link (bottom of body) -->
 
   <!-- ===================== MACROS ===================== -->
-
-  <!-- GAZEBO LINK SETTINGS
-    Gazebo color + friction for one link. Called inside the part macros below, so each new part gets it automatically.
-      link  : link name
-      color : "r g b a"
-      mu    : friction coefficient (optional; leave out for links that don't touch the ground)
-    mu1/mu2 are friction in the two directions along the ground. The <visual><material> block sets the
-    color Gazebo renders (ambient = color in shadow/ambient light, diffuse = color under direct light).
-  -->
-  <xacro:macro name="gazebo_link" params="link color mu:=''">
-    <gazebo reference="${link}">
-      <xacro:if value="${mu != ''}">
-        <mu1>${mu}</mu1>
-        <mu2>${mu}</mu2>
-      </xacro:if>
-      <visual>
-        <material>
-          <ambient>${color}</ambient>
-          <diffuse>${color}</diffuse>
-        </material>
-      </visual>
-    </gazebo>
-  </xacro:macro>
-
-  <!-- DRIVE WHEELS
+  <!-- DRIVE WHEEL
     Adding a wheel only needs a name and a position: <xacro:wheel prefix="left_" y="${wheel_y}"/>
 
     Required:
       prefix : name prefix, e.g. "left_" -> creates left_wheel_link + left_wheel_joint
       y      : side-to-side position of the wheel center (+ = left, - = right)
-    Optional (defaults come from the properties above):
+    Optional (defaults come from the properties):
       x      : front/back position of the wheel center (default 0 = centered)
       parent, radius, width, mass
     Height is automatic: the wheel center is placed one radius above the floor so it always touches the ground.
-
-    The wheel spins about its own Y axis (cylinder rotated 90 deg about X).
-    A positive joint velocity rolls the robot forward (+x) on BOTH sides, which is what DiffDrive expects.
-
-    Friction (1.0, grips) and color are set automatically. To have a new wheel driven, add its joint
-    to the DiffDrive plugin in gazebo_plugin.urdf.xacro.xml.
   -->
   <xacro:macro name="wheel" params="prefix y x:=0 parent:=base_link radius:=${wheel_radius} width:=${wheel_width} mass:=${wheel_mass}">
 
@@ -144,12 +105,15 @@
       <axis xyz="0 1 0"/>
     </joint>
 
-    <!-- Gazebo: high friction so the wheel grips, blue color -->
-    <xacro:gazebo_link link="${prefix}wheel_link" color="${wheel_color}" mu="1.0"/>
+    <!-- Gazebo: high friction so the wheel grips -->
+    <gazebo reference="${prefix}wheel_link">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
 
   </xacro:macro>
 
-  <!-- CASTER WHEELS
+  <!-- CASTER WHEEL
     Adding a caster only needs a name and a position: <xacro:caster prefix="front_left_" x="${caster_x}" y="${caster_y}"/>
 
     Required:
@@ -158,15 +122,8 @@
     Optional (defaults come from the properties above):
       parent, radius, mass
     Height is automatic: the caster bottom is placed caster_lift above the floor.
-
-    The caster is a sphere on a FIXED joint with zero friction. It doesn't actually rotate. It just slides
-    over the floor in any direction, which acts like a free-swiveling caster. This is the usual simple
-    way to do casters in simulation.
-
-    Zero friction and color are set automatically.
   -->
-  <xacro:macro name="caster"
-               params="prefix x y parent:=base_link radius:=${caster_radius} mass:=${caster_mass}">
+  <xacro:macro name="caster" params="prefix x y parent:=base_link radius:=${caster_radius} mass:=${caster_mass}">
 
     <link name="${prefix}caster_link">
       <visual>
@@ -186,7 +143,6 @@
 
       <inertial>
         <mass value="${mass}"/>
-        <!-- Solid sphere inertia -->
         <inertia ixx="${2*mass*radius*radius/5}" ixy="0" ixz="0"
                  iyy="${2*mass*radius*radius/5}" iyz="0"
                  izz="${2*mass*radius*radius/5}"/>
@@ -199,24 +155,24 @@
       <origin xyz="${x} ${y} ${ground_z + radius + caster_lift}" rpy="0 0 0"/>
     </joint>
 
-    <!--
-      Gazebo normally merges links on fixed joints into their parent (base_link) when it loads the URDF.
-      preserveFixedJoint keeps the caster as its own link, so its friction and color can't get mixed up with the body's.
-    -->
+    <!-- Gazebo normally merges links on fixed joints into their parent (base_link) when it loads the URDF. preserveFixedJoint keeps the caster as its own link, so its zero friction can't get mixed up with the body's -->
     <gazebo reference="${prefix}caster_joint">
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
 
-    <!-- Gazebo: frictionless so the caster slides in any direction, black color -->
-    <xacro:gazebo_link link="${prefix}caster_link" color="${caster_color}" mu="0.0"/>
+    <!-- Gazebo: frictionless so the caster slides in any direction -->
+    <gazebo reference="${prefix}caster_link">
+      <mu1>0.0</mu1>
+      <mu2>0.0</mu2>
+    </gazebo>
 
   </xacro:macro>
 
   <!-- ===================== LINKS ===================== -->
-
   <!-- Base Link (The Chassis) -->
   <link name="base_link">
     <visual>
+      <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
       <geometry>
         <box size="${length} ${width} ${height}"/>
       </geometry>
@@ -225,30 +181,25 @@
       </material>
     </visual>
     <collision>
+      <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
       <geometry>
         <box size="${length} ${width} ${height}"/>
       </geometry>
     </collision>
-    <inertial>
+    <inertial> <!-- solid box inertia -->
+      <origin xyz="0 0 ${height/3}" rpy="0 0 0"/>   <!-- center of mass 1/3 from bottom to simulate the battery pack -->
       <mass value="${mass}"/>
-      <!-- Solid box inertia -->
       <inertia ixx="${mass*(width*width + height*height)/12}" ixy="0.0" ixz="0.0"
                iyy="${mass*(length*length + height*height)/12}" iyz="0.0"
                izz="${mass*(length*length + width*width)/12}"/>
     </inertial>
   </link>
 
-  <!-- Gazebo: white body (no friction setting; the body doesn't touch the ground) -->
-  <xacro:gazebo_link link="base_link" color="${body_color}"/>
-
   <!-- Drive wheels: centered front/back, just outside each side, touching the ground -->
   <xacro:wheel prefix="left_"  y="${ wheel_y}"/>
   <xacro:wheel prefix="right_" y="${-wheel_y}"/>
 
   <!-- Casters: one under each corner of the body -->
-  <xacro:property name="caster_x" value="${length/2 - caster_inset}" />
-  <xacro:property name="caster_y" value="${width/2 - caster_inset}" />
-
   <xacro:caster prefix="front_left_"  x="${ caster_x}" y="${ caster_y}"/>
   <xacro:caster prefix="front_right_" x="${ caster_x}" y="${-caster_y}"/>
   <xacro:caster prefix="rear_left_"   x="${-caster_x}" y="${ caster_y}"/>

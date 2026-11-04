@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <!--
   GAZEBO / SIM SETTINGS
-  Everything here only matters in Gazebo. Tools outside Gazebo (robot_state_publisher, RViz, the real robot) ignore it.
-  Included by the master file neos.urdf.xacro.xml AFTER neos_core.urdf.xacro.xml, because it uses
-  the link names, joint names and properties (wheel_radius, wheel_separation) defined there.
+
+  Everything here only matters in Gazebo. Tools outside Gazebo (robot_state_publisher, RViz, the real robot) ignore it
 -->
+
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- ===================== DIFF DRIVE PLUGIN ===================== -->
@@ -27,7 +27,7 @@
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
 
-      <!-- LIMITS. The robot is tall (~1 m) and top-heavy, so keep acceleration gentle to avoid tipping it over -->
+      <!-- LIMITS. The robot is tall (~1 m), so keep acceleration gentle for now to avoid tipping over -->
       <max_linear_velocity>1.0</max_linear_velocity>
       <min_linear_velocity>-1.0</min_linear_velocity>
       <max_angular_velocity>2.0</max_angular_velocity>

@@ -1,15 +1,14 @@
 <?xml version="1.0"?>
 <!--
   NEOS MASTER DESCRIPTION
-  This is the file sim.launch.py passes to xacro. It holds no robot parts itself, it just assembles the pieces:
-    neos_core.urdf.xacro.xml     : physical robot (chassis, drive wheels, casters) + per-link Gazebo friction/colors
-    gazebo_plugin.urdf.xacro.xml : Gazebo plugins (DiffDrive)
-  Include paths are relative to this file, so all three files must sit in the same folder.
--->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="komo">
 
-  <!-- Core must come first: the Gazebo file refers to its links, joints and properties -->
-  <xacro:include filename="neos_core.urdf.xacro.xml"/>
+  Just beings in all the different components of the robot for the sim
+-->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="neos_sim">
+
+  <xacro:include filename="neos_core.urdf.xacro.xml"/> <!-- Core must come first since its referred to in other files -->
   <xacro:include filename="gazebo_plugin.urdf.xacro.xml"/>
+  <xacro:include filename="neos_camera.urdf.xacro.xml"/>
 
 </robot>
