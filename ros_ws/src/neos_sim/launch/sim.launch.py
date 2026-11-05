@@ -13,7 +13,7 @@ from launch_ros.descriptions import ComposableNode
 # 'ros2 launch' looks for a function with exactly this name and calls it
 def generate_launch_description():
     pkg = get_package_share_directory('neos_sim')    # Looks up neos_sim and returns /workspace/install/neos_sim/share/neos_sim
-    xacro_file = os.path.join(pkg, 'urdf', 'neos.urdf.xacro.xml') # Appends urdf/neos.urdf.xacro.xml to path
+    xacro_file = os.path.join(pkg, 'urdf', 'neos_master.urdf.xacro.xml') # Appends urdf/neos_master.urdf.xacro.xml to path
 
     # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
@@ -50,6 +50,7 @@ def generate_launch_description():
             '/camera/image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/image: Colour image
             '/camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/depth_image: Depth image, each pixel is a distance in meters
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo', # /camera/camera_info: Camera calibration data
+            '/scan@sensor_msgs/msg/LaserScan[ignition.msgs.LaserScan', # /scan: 2D lidar scan
         ])
 
     # In ROS 2, robot frames are x forward, y left, z up and the camera optical frames are z forward, x right, y down. On a real robot this isn't an issue, 

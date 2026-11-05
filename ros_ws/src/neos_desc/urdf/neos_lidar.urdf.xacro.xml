@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!--
+  NEOS 2D LIDAR
+  Placeholder specs typical of a hobby/indoor 2D lidar (update once the real lidar model is chosen)
+
+  - Full 360 deg scan, 1 deg resolution (360 samples)
+  - Scan rate 10 Hz
+  - Range 0.15m - 12m
+  - Mounted on top of the body at the center so nothing on the robot blocks the scan
+
+  Lidar data uses the normal ROS frame convention (x forward, angles counter-clockwise from x)
+-->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== Physical Specs ===================== -->
+  <xacro:property name="lidar_radius" value="0.035" />
+  <xacro:property name="lidar_height" value="0.04" />  <!-- top to bottom -->
+
+  <!-- ===================== Lidar Specs ===================== -->
+  <xacro:property name="lidar_samples"   value="360" />
+  <xacro:property name="lidar_rate"      value="10" />
+  <xacro:property name="lidar_min_range" value="0.15" />
+  <xacro:property name="lidar_max_range" value="12.0" />
+
+  <!-- ===================== LIDAR BODY ===================== -->
+  <link name="lidar_link">
+    <visual>
+      <geometry><cylinder radius="${lidar_radius}" length="${lidar_height}"/></geometry>
+      <material name="lidar_black"><color rgba="0 0 0 1"/></material>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="${lidar_radius}" length="${lidar_height}"/></geometry>
+    </collision>
+  </link>
+
+  <!-- Centered on top of the body. The link origin (scan plane) is at the middle of the lidar body -->
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="0 0 ${height + lidar_height/2}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===================== GAZEBO SENSOR ===================== -->
+  <!-- Publishes: /scan (bridged in sim.launch.py) -->
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <always_on>true</always_on>
+      <update_rate>${lidar_rate}</update_rate>
+      <visualize>true</visualize>
+      <topic>/scan</topic>
+      <ignition_frame_id>lidar_link</ignition_frame_id>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>${lidar_samples}</samples>
+            <resolution>1</resolution>
+            <min_angle>${-PI}</min_angle>
+            <max_angle>${PI}</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>${lidar_min_range}</min>
+          <max>${lidar_max_range}</max>
+          <resolution>0.01</resolution>
+        </range>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+</robot>

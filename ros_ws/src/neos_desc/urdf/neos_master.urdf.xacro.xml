@@ -10,5 +10,6 @@
   <xacro:include filename="neos_core.urdf.xacro.xml"/> <!-- Core must come first since its referred to in other files -->
   <xacro:include filename="gazebo_plugin.urdf.xacro.xml"/>
   <xacro:include filename="neos_camera.urdf.xacro.xml"/>
+  <xacro:include filename="neos_lidar.urdf.xacro.xml"/>
 
 </robot>
