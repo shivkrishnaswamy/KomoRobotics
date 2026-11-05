@@ -1,0 +1,208 @@
+<?xml version="1.0"?>
+<!--
+  NEOS CORE DESCRIPTION
+
+  The physical robot: chassis, drive wheels, and casters
+
+  Frame convention: +x = forward, +y = left, +z = up (REP-103)
+  base_link sits at the center of the bottom face of the body box.
+
+  Side view (x to the right):            Top view (x up):
+
+        +===========+                     c===========c      c = caster
+        |           |                     |           |
+        |   body    |                   [W]   body    [W]    W = drive wheel
+        |           |                     |           |
+        +===========+                     c===========c
+        c    (W)    c
+-->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== PROPERTIES ===================== -->
+  <xacro:property name="PI" value="3.14159265359" />
+
+  <!-- BODY -->
+  <xacro:property name="length" value="0.54" />
+  <xacro:property name="width"  value="0.60" />
+  <xacro:property name="total_robot_height" value="1.052" />
+  <xacro:property name="mass"   value="30.0" />
+
+  <!-- DRIVE WHEELS -->
+  <xacro:property name="wheel_radius" value="0.10" />
+  <xacro:property name="wheel_width"  value="0.04" />
+  <xacro:property name="wheel_mass"   value="0.5" />
+  <xacro:property name="wheel_gap"    value="0.01" />  <!-- space between body side and wheel -->
+  <xacro:property name="wheel_y" value="${width/2 + wheel_gap + wheel_width/2}" />
+  <xacro:property name="wheel_separation" value="${2*wheel_y}" />
+
+  <!-- CASTER WHEELS -->
+  <!-- Real casters are 4 in dia x 1.2 in thick. Modeled as frictionless spheres so they slide/turn freely in sim -->
+  <xacro:property name="caster_radius" value="0.05" />
+  <xacro:property name="caster_mass"   value="0.1" />
+  <!-- Caster center distance in from each body edge (so it stays fully under the body) -->
+  <xacro:property name="caster_inset"  value="${caster_radius + 0.01}" />
+  <xacro:property name="caster_x" value="${length/2 - caster_inset}" />
+  <xacro:property name="caster_y" value="${width/2 - caster_inset}" />
+  <!-- Casters are lifted a few mm above the ground so drive wheels always carry the weight -->
+  <xacro:property name="caster_lift"   value="0.003" />
+
+  <!-- COLOURS (r g b a, 0 to 1). Used by each part's URDF <material> -->
+  <xacro:property name="body_color"   value="1.0 1.0 1.0 1.0" />    <!-- white -->
+  <xacro:property name="wheel_color"  value="0.1 0.3 0.9 1.0" />    <!-- blue -->
+  <xacro:property name="caster_color" value="0.05 0.05 0.05 1.0" /> <!-- black -->
+
+  <!-- VERTICAL LAYOUT -->
+  <xacro:property name="ground_clearance" value="${2*caster_radius}" />   <!-- Gap between body bottom and floor -->
+  <xacro:property name="height" value="${total_robot_height - ground_clearance}" />   <!-- Body box height -->
+  <xacro:property name="ground_z" value="${-ground_clearance}" />   <!-- z of the floor, relative to base_link (bottom of body) -->
+
+  <!-- ===================== MACROS ===================== -->
+  <!-- DRIVE WHEEL
+    Adding a wheel only needs a name and a position: <xacro:wheel prefix="left_" y="${wheel_y}"/>
+
+    Required:
+      prefix : name prefix, e.g. "left_" -> creates left_wheel_link + left_wheel_joint
+      y      : side-to-side position of the wheel center (+ = left, - = right)
+    Optional (defaults come from the properties):
+      x      : front/back position of the wheel center (default 0 = centered)
+      parent, radius, width, mass
+    Height is automatic: the wheel center is placed one radius above the floor so it always touches the ground.
+  -->
+  <xacro:macro name="wheel" params="prefix y x:=0 parent:=base_link radius:=${wheel_radius} width:=${wheel_width} mass:=${wheel_mass}">
+
+    <link name="${prefix}wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${width}"/>
+        </geometry>
+        <material name="wheel_blue">
+          <color rgba="${wheel_color}"/>
+        </material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${width}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass value="${mass}"/>
+        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <inertia ixx="${mass*(3*radius*radius + width*width)/12}" ixy="0" ixz="0"
+                 iyy="${mass*(3*radius*radius + width*width)/12}" iyz="0"
+                 izz="${mass*radius*radius/2}"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}wheel_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child link="${prefix}wheel_link"/>
+      <origin xyz="${x} ${y} ${ground_z + radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <!-- Gazebo: high friction so the wheel grips -->
+    <gazebo reference="${prefix}wheel_link">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+
+  </xacro:macro>
+
+  <!-- CASTER WHEEL
+    Adding a caster only needs a name and a position: <xacro:caster prefix="front_left_" x="${caster_x}" y="${caster_y}"/>
+
+    Required:
+      prefix : name prefix, e.g. "front_left_" -> creates front_left_caster_link + front_left_caster_joint
+      x, y   : position of the caster center (+x = front, +y = left)
+    Optional (defaults come from the properties above):
+      parent, radius, mass
+    Height is automatic: the caster bottom is placed caster_lift above the floor.
+  -->
+  <xacro:macro name="caster" params="prefix x y parent:=base_link radius:=${caster_radius} mass:=${caster_mass}">
+
+    <link name="${prefix}caster_link">
+      <visual>
+        <geometry>
+          <sphere radius="${radius}"/>
+        </geometry>
+        <material name="caster_black">
+          <color rgba="${caster_color}"/>
+        </material>
+      </visual>
+
+      <collision>
+        <geometry>
+          <sphere radius="${radius}"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass value="${mass}"/>
+        <inertia ixx="${2*mass*radius*radius/5}" ixy="0" ixz="0"
+                 iyy="${2*mass*radius*radius/5}" iyz="0"
+                 izz="${2*mass*radius*radius/5}"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}caster_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}caster_link"/>
+      <origin xyz="${x} ${y} ${ground_z + radius + caster_lift}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Gazebo normally merges links on fixed joints into their parent (base_link) when it loads the URDF. preserveFixedJoint keeps the caster as its own link, so its zero friction can't get mixed up with the body's -->
+    <gazebo reference="${prefix}caster_joint">
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
+    <!-- Gazebo: frictionless so the caster slides in any direction -->
+    <gazebo reference="${prefix}caster_link">
+      <mu1>0.0</mu1>
+      <mu2>0.0</mu2>
+    </gazebo>
+
+  </xacro:macro>
+
+  <!-- ===================== LINKS ===================== -->
+  <!-- Base Link (The Chassis) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${length} ${width} ${height}"/>
+      </geometry>
+      <material name="body_white">
+        <color rgba="${body_color}"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${length} ${width} ${height}"/>
+      </geometry>
+    </collision>
+    <inertial> <!-- solid box inertia -->
+      <origin xyz="0 0 ${height/3}" rpy="0 0 0"/>   <!-- center of mass 1/3 from bottom to simulate the battery pack -->
+      <mass value="${mass}"/>
+      <inertia ixx="${mass*(width*width + height*height)/12}" ixy="0.0" ixz="0.0"
+               iyy="${mass*(length*length + height*height)/12}" iyz="0.0"
+               izz="${mass*(length*length + width*width)/12}"/>
+    </inertial>
+  </link>
+
+  <!-- Drive wheels: centered front/back, just outside each side, touching the ground -->
+  <xacro:wheel prefix="left_"  y="${ wheel_y}"/>
+  <xacro:wheel prefix="right_" y="${-wheel_y}"/>
+
+  <!-- Casters: one under each corner of the body -->
+  <xacro:caster prefix="front_left_"  x="${ caster_x}" y="${ caster_y}"/>
+  <xacro:caster prefix="front_right_" x="${ caster_x}" y="${-caster_y}"/>
+  <xacro:caster prefix="rear_left_"   x="${-caster_x}" y="${ caster_y}"/>
+  <xacro:caster prefix="rear_right_"  x="${-caster_x}" y="${-caster_y}"/>
+
+</robot>

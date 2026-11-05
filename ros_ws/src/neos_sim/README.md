@@ -8,7 +8,7 @@ The package has a name which is defined within the xml.
 
 #### CMakeLists.txt
 This file tells the build to copy certain files and folders into the install directory which is where ROS searches.\
-Allows us to run `ros2 launch komo_robotics_sim sim.launch.py` by package name instead of by file path, and lets other files be located more easily.
+Allows us to run `ros2 launch neos_sim sim.launch.py` by package name instead of by file path, and lets other files be located more easily.
 
 #### worlds/
 This directory contains different worlds we can load into the Gazebo simulation to test the robot in.\

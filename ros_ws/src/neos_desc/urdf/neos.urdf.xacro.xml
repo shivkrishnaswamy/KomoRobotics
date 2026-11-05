@@ -1,80 +1,14 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="komo">
+<!--
+  NEOS MASTER DESCRIPTION
 
-  <!-- XACRO Properties + Macros -->
-  <xacro:property name="robotname" value="neos" />
-  <xacro:property name="width" value="0.5" />
-  <xacro:property name="length" value="0.5" />
-  <xacro:property name="height" value="1.2" />
-  <xacro:property name="mass" value="5.0" />
-  <xacro:property name="wheel_len" value="0.2" />
-  <xacro:property name="wheel_rad" value="0.02" />
-  <xacro:property name="PI" value="3.14159265359" />
+  Just beings in all the different components of the robot for the sim
+-->
 
- <!--
-    Wheel macro.
-    prefix : name prefix, e.g. "left_" or "robot1_front_left_"
-    parent : parent link name
-    xyz/rpy: wheel joint origin relative to parent
-    The wheel spins about its own Y axis (cylinder rotated 90 deg about X).
-  -->
-  <xacro:macro name="wheel" params="prefix parent xyz rpy:='0 0 0' radius:=0.05 width:=0.03 mass:=0.2">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="neos_sim">
 
-    <link name="${prefix}wheel_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
-        <geometry>
-          <cylinder radius="${radius}" length="${width}"/>
-        </geometry>
-        <material name="${prefix}wheel_mat">
-          <color rgba="0.1 0.1 0.1 1.0"/>
-        </material>
-      </visual>
-
-      <collision>
-        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
-        <geometry>
-          <cylinder radius="${radius}" length="${width}"/>
-        </geometry>
-      </collision>
-
-      <inertial>
-        <mass value="${mass}"/>
-        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
-        <inertia ixx="${mass*(3*radius*radius + width*width)/12}" ixy="0" ixz="0"
-                 iyy="${mass*(3*radius*radius + width*width)/12}" iyz="0"
-                 izz="${mass*radius*radius/2}"/>
-      </inertial>
-    </link>
-
-    <joint name="${prefix}wheel_joint" type="continuous">
-      <parent link="${parent}"/>
-      <child link="${prefix}wheel_link"/>
-      <origin xyz="${xyz}" rpy="${rpy}"/>
-      <axis xyz="0 1 0"/>
-    </joint>
-
-  </xacro:macro>
-
-  <!-- Base Link (The Chassis) -->
-  <link name="base_link">
-    <visual>
-      <geometry>
-        <box size="${width} ${length} ${height}"/>
-      </geometry>
-    </visual>
-    <collision>
-      <geometry>
-        <box size="${width} ${length} ${height}"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <mass value="${mass}"/>
-      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
-    </inertial>
-  </link>
-
-  <xacro:wheel prefix="left_"  parent="base_link" xyz="0  0.15 0"/>
-  <xacro:wheel prefix="right_" parent="base_link" xyz="0 -0.15 0"/>
+  <xacro:include filename="neos_core.urdf.xacro.xml"/> <!-- Core must come first since its referred to in other files -->
+  <xacro:include filename="gazebo_plugin.urdf.xacro.xml"/>
+  <xacro:include filename="neos_camera.urdf.xacro.xml"/>
 
 </robot>
