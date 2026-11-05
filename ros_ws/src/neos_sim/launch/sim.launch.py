@@ -7,6 +7,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.actions import ComposableNodeContainer
+from launch_ros.descriptions import ComposableNode
 
 # 'ros2 launch' looks for a function with exactly this name and calls it
 def generate_launch_description():
@@ -46,8 +48,31 @@ def generate_launch_description():
             '/odom@nav_msgs/msg/Odometry[ignition.msgs.Odometry', # /odom: the robot’s estimated position and velocity
             '/camera/image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/image: Colour image
             '/camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/depth_image: Depth image, each pixel is a distance in meters
-            '/camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked', # /camera/points: 3D point cloud
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo', # /camera/camera_info: Camera calibration data
         ])
 
-    return LaunchDescription([gazebo, rsp, spawn, bridge]) # Hands ros2 launch the list of the four programs above and starts all of them
+    # In ROS 2, robot frames are x forward, y left, z up and the camera optical frames are z forward, x right, y down. On a real robot this isn't an issue, 
+    # because the camera driver produces data in optical coordinates and the transform adjusts correctly. In Gazebo, the RGB-D sensor computes its point cloud 
+    # in Gazebo's own x-forward axes (same as robot), but we label it with the optical frame. So the data arrives saying "I'm in camera_optical_link" while its 
+    # numbers are actually in x-forward (robot frame) axes. RViz trusts the label, applies the optical frame's rotation, and the cloud appears rotated 90°. 
+    # Our fix ignores Gazebo's cloud and rebuilds it from the depth image with depth_image_proc, which produces real optical-frame coordinates, so the numbers match the label.
+    
+    depth_to_points = ComposableNodeContainer(
+        name='depth_proc_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container',
+        composable_node_descriptions=[
+            ComposableNode(
+                package='depth_image_proc',
+                plugin='depth_image_proc::PointCloudXyzNode',
+                name='point_cloud_xyz',
+                parameters=[{'use_sim_time': True}],
+                remappings=[
+                    ('image_rect', '/camera/depth_image'),   # input: depth image
+                    ('camera_info', '/camera/camera_info'),  # input: calibration
+                    ('points', '/camera/points'),            # output: point cloud
+                ]),
+        ])
+
+    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points]) # Hands ros2 launch the list of the programs above and starts all of them
