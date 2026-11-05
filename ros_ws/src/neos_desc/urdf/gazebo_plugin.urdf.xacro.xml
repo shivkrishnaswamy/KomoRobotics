@@ -39,4 +39,15 @@
     </plugin>
   </gazebo>
 
+  <!-- ===================== JOINT STATE PUBLISHER ===================== -->
+  <!--
+    Publishes the simulated joint angles (the wheels) on /joint_states, so robot_state_publisher can place the wheel
+    frames in TF. On the real robot, the motor controller node publishes /joint_states from the wheel encoders instead.
+  -->
+  <gazebo>
+    <plugin filename="ignition-gazebo-joint-state-publisher-system" name="ignition::gazebo::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+    </plugin>
+  </gazebo>
+
 </robot>

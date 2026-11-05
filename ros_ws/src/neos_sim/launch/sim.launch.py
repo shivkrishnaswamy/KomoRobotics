@@ -46,6 +46,7 @@ def generate_launch_description():
             '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock', # /clock: the simulation time
             '/cmd_vel@geometry_msgs/msg/Twist]ignition.msgs.Twist', # /cmd_vel: velocity commands. Line that lets your keyboard drive the robot
             '/odom@nav_msgs/msg/Odometry[ignition.msgs.Odometry', # /odom: the robot’s estimated position and velocity
+            '/joint_states@sensor_msgs/msg/JointState[ignition.msgs.Model', # /joint_states: wheel joint angles, used by robot_state_publisher
             '/camera/image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/image: Colour image
             '/camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/depth_image: Depth image, each pixel is a distance in meters
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo', # /camera/camera_info: Camera calibration data
