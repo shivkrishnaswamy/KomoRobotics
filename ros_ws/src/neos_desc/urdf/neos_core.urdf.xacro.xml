@@ -10,9 +10,9 @@
   Side view (x to the right):            Top view (x up):
 
         +===========+                     c===========c      c = caster
-        |           |                     |           |
-        |   body    |                   [W]   body    [W]    W = drive wheel
-        |           |                     |           |
+        |   body    |                     |           |
+        |- - - - - -|  lidar channel    [W]   body    [W]    W = drive wheel
+        |- - - - - -|  (front to back)    |           |
         +===========+                     c===========c
         c    (W)    c
 -->
@@ -47,15 +47,20 @@
   <!-- Casters are lifted a few mm above the ground so drive wheels always carry the weight -->
   <xacro:property name="caster_lift"   value="0.003" />
 
-  <!-- COLOURS (r g b a, 0 to 1). Used by each part's URDF <material> -->
-  <xacro:property name="body_color"   value="1.0 1.0 1.0 1.0" />    <!-- white -->
-  <xacro:property name="wheel_color"  value="0.1 0.3 0.9 1.0" />    <!-- blue -->
-  <xacro:property name="caster_color" value="0.05 0.05 0.05 1.0" /> <!-- black -->
-
   <!-- VERTICAL LAYOUT -->
   <xacro:property name="ground_clearance" value="${2*caster_radius}" />   <!-- Gap between body bottom and floor -->
   <xacro:property name="height" value="${total_robot_height - ground_clearance}" />   <!-- Body box height -->
   <xacro:property name="ground_z" value="${-ground_clearance}" />   <!-- z of the floor, relative to base_link (bottom of body) -->
+
+  <!-- LIDAR CHANNEL -->
+  <xacro:property name="chassis_slab_height"    value="0.13" /> <!-- bottom slab of the body -->
+  <xacro:property name="channel_height"         value="0.13" />
+  <xacro:property name="channel_wall_thickness" value="0.08" />
+  <xacro:property name="channel_width"    value="${width - 2*channel_wall_thickness}" />
+  <xacro:property name="channel_bottom_z" value="${chassis_slab_height}" />
+  <xacro:property name="channel_top_z"    value="${chassis_slab_height + channel_height}" />
+  <xacro:property name="upper_body_height" value="${height - channel_top_z}" />
+  <xacro:property name="channel_wall_y"   value="${width/2 - channel_wall_thickness/2}" />   <!-- center of each side wall -->
 
   <!-- ===================== MACROS ===================== -->
   <!-- DRIVE WHEEL
@@ -77,9 +82,7 @@
         <geometry>
           <cylinder radius="${radius}" length="${width}"/>
         </geometry>
-        <material name="wheel_blue">
-          <color rgba="${wheel_color}"/>
-        </material>
+        <material name="wheel_blue"/>
       </visual>
 
       <collision>
@@ -130,9 +133,7 @@
         <geometry>
           <sphere radius="${radius}"/>
         </geometry>
-        <material name="caster_black">
-          <color rgba="${caster_color}"/>
-        </material>
+        <material name="caster_black"/>
       </visual>
 
       <collision>
@@ -168,24 +169,59 @@
 
   </xacro:macro>
 
-  <!-- ===================== LINKS ===================== -->
-  <!-- Base Link (The Chassis) -->
-  <link name="base_link">
-    <visual>
-      <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+  <!-- CHASSIS BOX
+    One solid piece of the chassis (visual + collision), placed inside the current link.
+    Used several times inside base_link to build the body around the lidar channel.
+      name : label for the piece (only used for readability in the generated URDF)
+      x, y, z    : center of the box, relative to base_link
+      sx, sy, sz : box size (length, width, height)
+  -->
+  <xacro:macro name="chassis_box" params="name x y z sx sy sz">
+    <visual name="${name}_visual">
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
       <geometry>
-        <box size="${length} ${width} ${height}"/>
+        <box size="${sx} ${sy} ${sz}"/>
       </geometry>
-      <material name="body_white">
-        <color rgba="${body_color}"/>
-      </material>
+      <material name="body_white"/>
     </visual>
-    <collision>
-      <origin xyz="0 0 ${height/2}" rpy="0 0 0"/>
+    <collision name="${name}_collision">
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
       <geometry>
-        <box size="${length} ${width} ${height}"/>
+        <box size="${sx} ${sy} ${sz}"/>
       </geometry>
     </collision>
+  </xacro:macro>
+
+  <!-- ===================== LINKS ===================== -->
+  <!-- Base Link (The Chassis)
+
+    Front view (y to the left):
+        +====================+  z = height
+        |     upper body     |
+        +====+==========+====+  z = channel_top_z
+        |wall|  channel |wall|     (channel open from front face to back face)
+        +====+==========+====+  z = channel_bottom_z
+        |    bottom slab     |
+        +====================+  z = 0 (base_link)
+  -->
+  <link name="base_link">
+    <xacro:chassis_box name="bottom_slab"
+      x="0" y="0" z="${chassis_slab_height/2}"
+      sx="${length}" sy="${width}" sz="${chassis_slab_height}"/>
+
+    <xacro:chassis_box name="left_channel_wall"
+      x="0" y="${channel_wall_y}" z="${channel_bottom_z + channel_height/2}"
+      sx="${length}" sy="${channel_wall_thickness}" sz="${channel_height}"/>
+
+    <xacro:chassis_box name="right_channel_wall"
+      x="0" y="${-channel_wall_y}" z="${channel_bottom_z + channel_height/2}"
+      sx="${length}" sy="${channel_wall_thickness}" sz="${channel_height}"/>
+
+    <xacro:chassis_box name="upper_body"
+      x="0" y="0" z="${channel_top_z + upper_body_height/2}"
+      sx="${length}" sy="${width}" sz="${upper_body_height}"/>
+
+    <!-- Inertia is still approximated as a solid box. The channel removes only ~10% of the volume, close enough for now -->
     <inertial> <!-- solid box inertia -->
       <origin xyz="0 0 ${height/3}" rpy="0 0 0"/>   <!-- center of mass 1/3 from bottom to simulate the battery pack -->
       <mass value="${mass}"/>

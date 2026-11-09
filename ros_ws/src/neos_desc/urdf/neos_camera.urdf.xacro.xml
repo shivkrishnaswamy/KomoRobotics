@@ -14,6 +14,8 @@
   We currently use 'raw stereo depth' but can switch to 'depth algined to colour' which reprojects depth onto 
   the color camera's view, so pixel (x, y) in the color image and pixel (x, y) in the depth image are the same point.
   Enables coloured point clouds but have a narrower FOV.
+
+  Optical frame: ROS image convention is z forward, x right, y down (REP-103)
 -->
 
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
@@ -35,7 +37,7 @@
   <link name="camera_link">
     <visual>
       <geometry><box size="${cam_depth} ${cam_width} ${cam_height}"/></geometry>
-      <material name="camera_black"><color rgba="0 0 0 1"/></material>
+      <material name="camera_black"/>
     </visual>
     <collision>
       <geometry><box size="${cam_depth} ${cam_width} ${cam_height}"/></geometry>
