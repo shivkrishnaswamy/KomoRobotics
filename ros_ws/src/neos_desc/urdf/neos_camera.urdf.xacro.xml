@@ -32,12 +32,13 @@
   <xacro:property name="cam_rate"   value="30" />
   <xacro:property name="cam_near"   value="0.70" />
   <xacro:property name="cam_far"    value="30.0" />
+  <xacro:property name="camera_color" value="0 0 0 1" />  <!-- black -->
 
   <!-- ===================== CAMERA BODY ===================== -->
   <link name="camera_link">
     <visual>
       <geometry><box size="${cam_depth} ${cam_width} ${cam_height}"/></geometry>
-      <material name="camera_black"/>
+      <material name="camera_black"><color rgba="${camera_color}"/></material>
     </visual>
     <collision>
       <geometry><box size="${cam_depth} ${cam_width} ${cam_height}"/></geometry>

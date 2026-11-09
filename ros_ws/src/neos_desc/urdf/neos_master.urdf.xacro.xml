@@ -7,12 +7,6 @@
 
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="neos_sim">
 
-  <material name="body_white">   <color rgba="1.0 1.0 1.0 1.0"/>    </material>
-  <material name="wheel_blue">   <color rgba="0.1 0.3 0.9 1.0"/>    </material>
-  <material name="caster_black"> <color rgba="0.05 0.05 0.05 1.0"/> </material>
-  <material name="camera_black"> <color rgba="0 0 0 1"/>            </material>
-  <material name="lidar_black">  <color rgba="0 0 0 1"/>            </material>
-
   <xacro:include filename="neos_core.urdf.xacro.xml"/> <!-- Core must come first since its referred to in other files -->
   <xacro:include filename="gazebo_plugin.urdf.xacro.xml"/>
   <xacro:include filename="neos_camera.urdf.xacro.xml"/>

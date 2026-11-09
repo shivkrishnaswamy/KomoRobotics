@@ -47,6 +47,11 @@
   <!-- Casters are lifted a few mm above the ground so drive wheels always carry the weight -->
   <xacro:property name="caster_lift"   value="0.003" />
 
+  <!-- COLOURS -->
+  <xacro:property name="body_color"   value="1.0 1.0 1.0 1.0" />    <!-- white -->
+  <xacro:property name="wheel_color"  value="0.1 0.3 0.9 1.0" />    <!-- blue -->
+  <xacro:property name="caster_color" value="0.05 0.05 0.05 1.0" /> <!-- black -->
+
   <!-- VERTICAL LAYOUT -->
   <xacro:property name="ground_clearance" value="${2*caster_radius}" />   <!-- Gap between body bottom and floor -->
   <xacro:property name="height" value="${total_robot_height - ground_clearance}" />   <!-- Body box height -->
@@ -82,7 +87,7 @@
         <geometry>
           <cylinder radius="${radius}" length="${width}"/>
         </geometry>
-        <material name="wheel_blue"/>
+        <material name="wheel_blue"><color rgba="${wheel_color}"/></material>
       </visual>
 
       <collision>
@@ -133,7 +138,7 @@
         <geometry>
           <sphere radius="${radius}"/>
         </geometry>
-        <material name="caster_black"/>
+        <material name="caster_black"><color rgba="${caster_color}"/></material>
       </visual>
 
       <collision>
@@ -182,7 +187,7 @@
       <geometry>
         <box size="${sx} ${sy} ${sz}"/>
       </geometry>
-      <material name="body_white"/>
+      <material name="body_white"><color rgba="${body_color}"/></material>
     </visual>
     <collision name="${name}_collision">
       <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
