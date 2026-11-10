@@ -13,7 +13,7 @@ from launch_ros.descriptions import ComposableNode
 # 'ros2 launch' looks for a function with exactly this name and calls it
 def generate_launch_description():
     pkg = get_package_share_directory('neos_sim')    # Looks up neos_sim and returns /workspace/install/neos_sim/share/neos_sim
-    xacro_file = os.path.join(pkg, 'urdf', 'neos.urdf.xacro.xml') # Appends urdf/neos.urdf.xacro.xml to path
+    xacro_file = os.path.join(pkg, 'urdf', 'neos_master.urdf.xacro.xml') # Appends urdf/neos_master.urdf.xacro.xml to path
 
     # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
@@ -46,9 +46,12 @@ def generate_launch_description():
             '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock', # /clock: the simulation time
             '/cmd_vel@geometry_msgs/msg/Twist]ignition.msgs.Twist', # /cmd_vel: velocity commands. Line that lets your keyboard drive the robot
             '/odom@nav_msgs/msg/Odometry[ignition.msgs.Odometry', # /odom: the robot’s estimated position and velocity
+            '/tf@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V', # /tf: odom -> base_link transform from the DiffDrive plugin
+            '/joint_states@sensor_msgs/msg/JointState[ignition.msgs.Model', # /joint_states: wheel joint angles, used by robot_state_publisher
             '/camera/image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/image: Colour image
             '/camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/depth_image: Depth image, each pixel is a distance in meters
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo', # /camera/camera_info: Camera calibration data
+            '/scan@sensor_msgs/msg/LaserScan[ignition.msgs.LaserScan', # /scan: 2D lidar scan
         ])
 
     # In ROS 2, robot frames are x forward, y left, z up and the camera optical frames are z forward, x right, y down. On a real robot this isn't an issue, 

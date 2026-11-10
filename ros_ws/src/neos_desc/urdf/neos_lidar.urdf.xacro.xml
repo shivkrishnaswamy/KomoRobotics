@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<!--
+  NEOS 2D LIDAR
+  LDROBOT D800 STL-27L
+
+  Specs:
+  - Range 0.03m - 25m at 80% reflectivity (only ~10m on dark, 4% reflectivity surfaces)
+  - Scanning angle 360deg (will need to limit just to front of robot for SLAM/Nav2)
+  - Angular resolution 0.167 deg
+  - Scanning frequency is 10Hz
+  - Ranging frequency is 21600Hz
+  - 2160 points per revolution
+  - Scan plane height?
+
+  2D: a single horizontal scan plane (1 vertical ray), published as sensor_msgs/LaserScan on /scan
+
+  Lidar data uses the normal ROS frame convention (x forward, angles counter-clockwise from x, so +90 deg = left)
+-->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== Specs ===================== -->
+  <xacro:property name="lidar_radius"        value="${0.03529/2}" />  <!-- 35.29 mm diameter -->
+  <xacro:property name="lidar_height"        value="0.0348" />
+  <xacro:property name="lidar_scan_from_top" value="0.006" />         <!-- scan plane is 6 mm below the top -->
+  <xacro:property name="lidar_scan_z"        value="${lidar_height - lidar_scan_from_top}" />
+
+  <xacro:property name="lidar_rate"           value="10" />
+  <xacro:property name="lidar_points_per_rev" value="2160" />
+  <xacro:property name="lidar_min_angle"      value="${-PI}" /> <!-- Full 360 deg -->
+  <xacro:property name="lidar_max_angle"      value="${PI - 2*PI/lidar_points_per_rev}" />
+  <xacro:property name="lidar_min_range" value="0.03" />
+  <xacro:property name="lidar_max_range" value="25.0" />
+  <xacro:property name="lidar_color"     value="0 0 0 1" />  <!-- black -->
+
+  <xacro:property name="lidar_x" value="${length/2 - lidar_radius}" /> <!-- Front of the lidar flush with the front face -->
+  <xacro:property name="lidar_z" value="${channel_bottom_z + lidar_scan_z}" />
+
+  <!-- ===================== LIDAR BODY ===================== -->
+  <!--
+    The link origin is the SCAN PLANE (the center of the spinning laser), because that's where the
+    measurements come from. The cylinder is shifted so its base sits lidar_scan_z below that.
+  -->
+  <link name="lidar_link">
+    <visual>
+      <origin xyz="0 0 ${lidar_height/2 - lidar_scan_z}" rpy="0 0 0"/>
+      <geometry><cylinder radius="${lidar_radius}" length="${lidar_height}"/></geometry>
+      <material name="lidar_black"><color rgba="${lidar_color}"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${lidar_height/2 - lidar_scan_z}" rpy="0 0 0"/>
+      <geometry><cylinder radius="${lidar_radius}" length="${lidar_height}"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="${lidar_x} 0 ${lidar_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===================== GAZEBO SENSOR ===================== -->
+  <!-- Publishes sensor_msgs/LaserScan on /scan (bridged in sim.launch.py) -->
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <always_on>true</always_on>
+      <update_rate>${lidar_rate}</update_rate>
+      <visualize>true</visualize>
+      <topic>/scan</topic>
+      <ignition_frame_id>lidar_link</ignition_frame_id>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>${lidar_points_per_rev}</samples>
+            <resolution>1</resolution>
+            <min_angle>${lidar_min_angle}</min_angle>
+            <max_angle>${lidar_max_angle}</max_angle>
+          </horizontal>
+          <vertical>  <!-- 2D: exactly one ray vertically, so the scan is a single flat plane -->
+            <samples>1</samples>
+            <resolution>1</resolution>
+            <min_angle>0</min_angle>
+            <max_angle>0</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>${lidar_min_range}</min>
+          <max>${lidar_max_range}</max>
+          <resolution>0.01</resolution>
+        </range>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+</robot>
