@@ -26,7 +26,8 @@
       <odom_publish_frequency>50</odom_publish_frequency>
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
-      <tf_topic>/tf</tf_topic>  <!-- Publishes the odom -> base_link transform (bridged to ROS /tf in sim.launch.py) -->
+      <!-- No tf_topic: the plugin still publishes odom -> base_link on its default Gazebo topic, but it is NOT bridged to ROS. EKF does it instead -->
+      <!-- <tf_topic>/tf</tf_topic> Publishes the odom -> base_link transform (bridged to ROS /tf in sim.launch.py) -->
 
       <!-- LIMITS. The robot is tall (~1 m), so keep acceleration gentle for now to avoid tipping over -->
       <max_linear_velocity>1.0</max_linear_velocity>
@@ -49,6 +50,12 @@
     <plugin filename="ignition-gazebo-joint-state-publisher-system" name="ignition::gazebo::systems::JointStatePublisher">
       <topic>/joint_states</topic>
     </plugin>
+  </gazebo>
+
+  <!-- ===================== IMU SYSTEM ===================== -->
+  <!-- Gazebo only computes IMU readings if this system is loaded -->
+  <gazebo>
+    <plugin filename="ignition-gazebo-imu-system" name="ignition::gazebo::systems::Imu"/>
   </gazebo>
 
 </robot>

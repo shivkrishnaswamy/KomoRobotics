@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!--
+  NEOS IMU
+  SparkFun 6DoF IMU Breakout - ISM330DHCX (Qwiic), 3-axis gyro + 3-axis accelerometer
+
+  - Output data rate for gyro and accel: 12.5, 26, 52, 104, 208, 416, 833, 1666, 3332, 6667 Hz (accel also has 1.6) We use 104 Hz
+  - Gyro rate noise density typ 5 mdps/sqrt(Hz) max 8
+  - Accel noise density typ 60 ug/sqrt(Hz) max 100
+  - Gyro zero-rate level (power-up bias) +-1 dps (max +-3), bias instability 3 deg/h
+  - Accel zero-g offset +-10 mg (max +-65)
+  - No magnetometer, so yaw from the IMU will drift. Heading comes from fusing gyro z with wheel odom (and later SLAM)
+
+  Converting datasheet noise to Gazebo's per-reading stddev:
+    stddev = noise_density * sqrt(bandwidth), with bandwidth = ODR/2 (datasheet convention) -> sqrt(52) = 7.21
+    gyro:  5 mdps * 7.21 = 0.036 dps = 0.00063 rad/s
+    accel: 60 ug  * 7.21 = 433 ug    = 0.0042 m/s^2
+
+  Gyro bias assumes the real IMU driver CALIBRATES at startup (averages the gyro while the robot is still and subtracts it).
+  That removes the +-1 dps power-up offset, leaving only bias instability + temperature drift (~0.00002 rad/s).
+  The sim publishes /imu with no calibration step, so it simulates what is left AFTER calibration.
+  (Uncalibrated would be ~0.0175 rad/s = 1 deg/s of fake turning.)
+
+  Publishes sensor_msgs/Imu on /imu: orientation, angular_velocity, linear_acceleration
+  IMU data uses the normal ROS frame convention (x forward, y left, z up). At rest, linear_acceleration.z reads about +9.8 (REP-145)
+-->
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===================== Physical Specs ===================== -->
+  <xacro:property name="imu_size"      value="0.02" />   <!-- 2 cm x 2 cm board -->
+  <xacro:property name="imu_thickness" value="0.005" />
+  <xacro:property name="imu_color"     value="0 0.6 0 1" />  <!-- green (PCB) -->
+
+  <xacro:property name="imu_x" value="0" />  <!-- center front to back (on the wheel axis) -->
+  <xacro:property name="imu_y" value="0" />  <!-- center side to side -->
+  <xacro:property name="imu_z" value="${channel_bottom_z + imu_thickness/2}" />  <!-- lying on the lidar channel floor -->
+
+  <!-- ===================== IMU Specs ===================== -->
+  <xacro:property name="imu_rate"         value="104" />
+  <xacro:property name="imu_gyro_stddev"  value="0.00063" />  <!-- rad/s, 5 mdps/sqrt(Hz) at 104 Hz -->
+  <xacro:property name="imu_gyro_bias"    value="0.00002" />  <!-- rad/s, residual after startup calibration -->
+  <xacro:property name="imu_accel_stddev" value="0.0042" />   <!-- m/s^2, 60 ug/sqrt(Hz) at 104 Hz -->
+  <xacro:property name="imu_accel_bias"   value="0.098" />    <!-- m/s^2, 10 mg zero-g offset (accel is not calibrated or fused yet) -->
+
+  <!-- NOISE MACRO
+    Gaussian noise block for one axis, so the 6 axes below don't repeat the same 6 lines.
+      stddev    : white noise on every reading
+      bias_mean : constant offset (a real IMU is never perfectly zeroed)
+  -->
+  <xacro:macro name="imu_noise" params="stddev bias_mean">
+    <noise type="gaussian">
+      <mean>0.0</mean>
+      <stddev>${stddev}</stddev>
+      <bias_mean>${bias_mean}</bias_mean>
+      <bias_stddev>${bias_mean/10}</bias_stddev>
+    </noise>
+  </xacro:macro>
+
+  <!-- ===================== IMU BODY ===================== -->
+  <link name="imu_link">
+    <visual>
+      <geometry><box size="${imu_size} ${imu_size} ${imu_thickness}"/></geometry>
+      <material name="imu_green"><color rgba="${imu_color}"/></material>
+    </visual>
+  </link>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="${imu_x} ${imu_y} ${imu_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===================== GAZEBO SENSOR ===================== -->
+  <!-- Publishes sensor_msgs/Imu on /imu (bridged in sim.launch.py) -->
+  <gazebo reference="imu_link">
+    <sensor name="imu" type="imu">
+      <always_on>true</always_on>
+      <update_rate>${imu_rate}</update_rate>
+      <visualize>false</visualize>
+      <topic>/imu</topic>
+      <ignition_frame_id>imu_link</ignition_frame_id>
+      <imu>
+        <angular_velocity>
+          <x><xacro:imu_noise stddev="${imu_gyro_stddev}" bias_mean="${imu_gyro_bias}"/></x>
+          <y><xacro:imu_noise stddev="${imu_gyro_stddev}" bias_mean="${imu_gyro_bias}"/></y>
+          <z><xacro:imu_noise stddev="${imu_gyro_stddev}" bias_mean="${imu_gyro_bias}"/></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><xacro:imu_noise stddev="${imu_accel_stddev}" bias_mean="${imu_accel_bias}"/></x>
+          <y><xacro:imu_noise stddev="${imu_accel_stddev}" bias_mean="${imu_accel_bias}"/></y>
+          <z><xacro:imu_noise stddev="${imu_accel_stddev}" bias_mean="${imu_accel_bias}"/></z>
+        </linear_acceleration>
+      </imu>
+    </sensor>
+  </gazebo>
+
+</robot>

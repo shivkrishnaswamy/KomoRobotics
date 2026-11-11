@@ -14,6 +14,7 @@ from launch_ros.descriptions import ComposableNode
 def generate_launch_description():
     pkg = get_package_share_directory('neos_sim')    # Looks up neos_sim and returns /workspace/install/neos_sim/share/neos_sim
     xacro_file = os.path.join(pkg, 'urdf', 'neos_master.urdf.xacro.xml') # Appends urdf/neos_master.urdf.xacro.xml to path
+    ekf_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'ekf.yaml') # EKF config
 
     # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
@@ -46,12 +47,13 @@ def generate_launch_description():
             '/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock', # /clock: the simulation time
             '/cmd_vel@geometry_msgs/msg/Twist]ignition.msgs.Twist', # /cmd_vel: velocity commands. Line that lets your keyboard drive the robot
             '/odom@nav_msgs/msg/Odometry[ignition.msgs.Odometry', # /odom: the robot’s estimated position and velocity
-            '/tf@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V', # /tf: odom -> base_link transform from the DiffDrive plugin
+            # '/tf@tf2_msgs/msg/TFMessage[ignition.msgs.Pose_V', # /tf: odom -> base_link transform from the DiffDrive plugin
             '/joint_states@sensor_msgs/msg/JointState[ignition.msgs.Model', # /joint_states: wheel joint angles, used by robot_state_publisher
             '/camera/image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/image: Colour image
             '/camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image', # /camera/depth_image: Depth image, each pixel is a distance in meters
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo', # /camera/camera_info: Camera calibration data
             '/scan@sensor_msgs/msg/LaserScan[ignition.msgs.LaserScan', # /scan: 2D lidar scan
+            '/imu@sensor_msgs/msg/Imu[ignition.msgs.IMU', # /imu: orientation, angular velocity, linear acceleration
         ])
 
     # In ROS 2, robot frames are x forward, y left, z up and the camera optical frames are z forward, x right, y down. On a real robot this isn't an issue, 
@@ -78,4 +80,15 @@ def generate_launch_description():
                 ]),
         ])
 
-    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points]) # Hands ros2 launch the list of the programs above and starts all of them
+    # Describes the EKF program 'ekf_node' inside the ROS package 'robot_localization'
+    # Gives the running node the name 'ekf_filter_node', and tells it to print to the screen
+    # EKF fuses /odom + /imu into /odometry/filtered and publishes the odom -> base_link TF.
+    # name must match the top-level key in ekf.yaml
+    ekf = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config, {'use_sim_time': True}])
+
+    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points, ekf]) # Hands ros2 launch the list of the programs above and starts all of them

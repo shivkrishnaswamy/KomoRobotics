@@ -1,0 +1,63 @@
+# Extended Kalman Filter configuration (robot_localization ekf_node)
+
+# Fuses wheel odometry (/odom) and the IMU (/imu) into one smoother odometry estimate.
+# Publishes: /odometry/filtered and the odom -> base_link TF
+# SLAM (later) publishes map -> odom on top of this
+# Shared by the real robot and the sim. Keep use_sim_time out of this file, set it in each launch file
+
+# config order (true fuses that field):
+#      x,     y,     z,       position
+#     roll,  pitch, yaw,      orientation
+#     vx,    vy,    vz,       linear velocity
+#     vroll, vpitch, vyaw,    angular velocity
+#     ax,    ay,    az        linear acceleration
+
+ekf_filter_node:
+  ros__parameters:
+    frequency: 50.0          # EKF output rate (Hz). Match the /odom rate
+    sensor_timeout: 0.1      # If no input for this long, predict forward without a measurement
+    two_d_mode: true         # Flat floor: ignore z, roll, pitch (and their rates)
+    publish_tf: true         # Publish odom -> base_link
+    publish_acceleration: false # Publish the estimated acceleration. SLAM doesnt need it
+    print_diagnostics: true     # EKF publish health reports on /diagnostics (ros2 topic echo /diagnostics) or (ros2 run rqt_robot_monitor rqt_robot_monitor)
+
+    # Tells EKF which coordiante frames to use and which transform its for
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom # EKF publishes the odom -> base_link transofrm
+
+    # WHEEL ODOMETRY
+    # - true means take value from message and use to correct estimate, false means ignore it
+    # - position and orientation rows ignored cause wheels odom position is just its own velocities integrated over time. The filer already  
+    # adds the velocities given to it so fusing position would count the info twice. Position from wheels also drifts more over time
+    # - Since we're in 2D (xy), ignore z, roll, pitch, and vz, vroll, vpitch. The wheels odometry message has no acceleration so row 5 is false
+    # - vy is fused even though the wheels never measure it (diff drive can't slide sideways) but fusing keeps the filter from inventing sideways motion.
+
+    odom0: /odom # The topic to subscribe to for odometry data (nav_msgs/Odometry)
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, true,
+                   false, false, false]
+    odom0_queue_size: 10      # Number of incoming messages that can wait between the filters cycles. Oldest dropped if queue overflows
+    odom0_differential: false # If true takes change in position between messages and turns it into velocity instead of using velocity directly 
+    odom0_relative: false     # If true, first message treated as zero and others are relative to it
+
+    # IMU
+    # - IMU cant measure position or velocity directly so row 1 and 3 must be false
+    # - roll and pitch ignored in 2D. yaw (with no magnometer) its own gyro readings integrated over time so it drifts
+    # - Fuse yaw rate (gyro z) only. This is what the IMU adds: wheels slip when turning, the gyro doesn't.
+    # - vroll and vpitch ignored in 2D. vyaw measures turn rate so we need it (isn't affected by slip)
+    # - Acceleration ax is left off for now. Cheap IMU accelerometers are noisy and can make velocity jumpy; try it once tuned.
+    imu0: /imu
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+    imu0_queue_size: 10
+    # differential and relative have same meaning as odom but only apply to orientation
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true # Makes filter subtract gravity using orientation in message before using the acceleration
