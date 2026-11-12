@@ -49,7 +49,8 @@ ekf_filter_node:
     # - roll and pitch ignored in 2D. yaw (with no magnometer) its own gyro readings integrated over time so it drifts
     # - Fuse yaw rate (gyro z) only. This is what the IMU adds: wheels slip when turning, the gyro doesn't.
     # - vroll and vpitch ignored in 2D. vyaw measures turn rate so we need it (isn't affected by slip)
-    # - Acceleration ax is left off for now. Cheap IMU accelerometers are noisy and can make velocity jumpy; try it once tuned.
+    # - Acceleration ax is left off for now. Cheap IMU accelerometers are noisy and can make velocity jumpy so try once tuned
+
     imu0: /imu
     imu0_config: [false, false, false,
                   false, false, false,
