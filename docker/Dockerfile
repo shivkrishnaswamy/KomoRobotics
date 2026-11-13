@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y \
     ros-humble-teleop-twist-keyboard \
     # Draws coordinate frame tree
     ros-humble-tf2-tools \
+    # Extended Kalman Filter that fuses wheel odometry and IMU
+    ros-humble-robot-localization \
     # colcon build command
     python3-colcon-common-extensions \
     # Other useful tools
