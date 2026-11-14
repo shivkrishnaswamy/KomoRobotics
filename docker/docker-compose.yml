@@ -7,7 +7,8 @@ services:
     image: ros2_humble_gazebo_fortress:latest # Name tagged to built image
     container_name: ros2_simulation
     restart: unless-stopped                   # Restarts container on crash or machine reboot unless it is explicitly stopped
-    network_mode: host                        # Allows the container to share the host's network (essential for ROS2 DDS discovery)
+    ports:
+      - "8765:8765"                           # Foxglove bridge WebSocket (connect Foxglove Studio to ws://localhost:8765)
     stdin_open: true                          # Enables interactive terminal control (equivalent to docker run -it)
     tty: true
 

@@ -91,4 +91,12 @@ def generate_launch_description():
         output='screen',
         parameters=[ekf_config, {'use_sim_time': True}])
 
-    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points, ekf]) # Hands ros2 launch the list of the programs above and starts all of them
+    # Starts a WebSocket server that exposes all ROS 2 topics to Foxglove Studio
+    # Connect from Foxglove Studio with ws://localhost:8765 (port is published in docker-compose.yml)
+    # address 0.0.0.0: listen on all interfaces so the host can reach it from outside the container
+    foxglove = Node(
+        package='foxglove_bridge',
+        executable='foxglove_bridge',
+        parameters=[{'port': 8765, 'address': '0.0.0.0', 'use_sim_time': True}])
+
+    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points, ekf, foxglove]) # Hands ros2 launch the list of the programs above and starts all of them

@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y \
     ros-humble-tf2-tools \
     # Extended Kalman Filter that fuses wheel odometry and IMU
     ros-humble-robot-localization \
+    # WebSocket bridge so Foxglove Studio can connect to ROS2 topics
+    ros-humble-foxglove-bridge \
     # colcon build command
     python3-colcon-common-extensions \
     # Other useful tools
