@@ -72,3 +72,7 @@ install/
 log/
 
 .vscode/
+CLAUDE.md
+
+# SLAM map databases and exported maps
+maps/

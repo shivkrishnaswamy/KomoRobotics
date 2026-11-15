@@ -31,6 +31,10 @@ RUN apt-get update && apt-get install -y \
     ros-humble-tf2-tools \
     # Extended Kalman Filter that fuses wheel odometry and IMU
     ros-humble-robot-localization \
+    # RTAB-Map SLAM (provides rtabmap, rgbd_sync, and rtabmap_viz)
+    ros-humble-rtabmap-ros \
+    # map_saver_cli that saves the 2D occupancy grid (/map) to a image file for Nav2
+    ros-humble-nav2-map-server \
     # colcon build command
     python3-colcon-common-extensions \
     # Other useful tools

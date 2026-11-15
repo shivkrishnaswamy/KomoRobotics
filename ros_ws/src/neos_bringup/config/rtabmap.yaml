@@ -1,0 +1,69 @@
+# RTAB-Map SLAM configuration (rtabmap_slam rtabmap node)
+
+# Builds a map and removes the EKF's long-term drift by recognising places it has seen before (loop closure).
+# Inputs:   /camera/rgbd_image (colour + depth + calibration bundled by rgbd_sync), /scan (2D lidar),
+#           odom -> base_link TF (from the EKF, so the IMU + wheel fusion is the motion prior)
+# Outputs:  map -> odom TF, /map (2D occupancy grid), /rtabmap/cloud_map (3D cloud), the map database (.db)
+# Shared by the real robot and the sim. Keep use_sim_time, database_path and mapping/localization mode out of this file,
+# they are set in slam.launch.py
+
+/**:    # "/**" applies these to the node it is given to regardless of its namespace (the node runs in the /rtabmap namespace)
+  ros__parameters:
+    # FRAMES: Reads robots position from odom -> base_link and publishes map -> odom correction on top
+    frame_id: base_link   # Robot frame
+    odom_frame_id: odom   # Read odometry from the odom -> base_link TF (published by the EKF)
+    map_frame_id: map
+    publish_tf: true      # Publish map -> odom (the drift correction)
+
+    # INPUTS: 
+    subscribe_rgbd: true      # /camera/rgbd_image from rgbd_sync
+    subscribe_scan: true      # /scan from the lidar
+    subscribe_depth: false    # Depth comes inside rgbd_image, not on its own
+    subscribe_rgb: false
+    subscribe_odom_info: false # Only used with RTAB-Map's own odometry nodes, we use the EKF
+    approx_sync: true         # Camera (15 Hz) and lidar (10 Hz) are never stamped at the exact same time, so pair the closest ones
+    sync_queue_size: 10
+    topic_queue_size: 10
+    wait_for_transform: 0.2   # Seconds to wait for TF (odom -> base_link, base_link -> sensors) before dropping a frame
+
+    # GRAPH: A new node (snapshot) is added every time the robot moves this far or turns this much
+    RGBD/LinearUpdate: "0.05"         # m
+    RGBD/AngularUpdate: "0.05"        # rad (~3 deg)
+    RGBD/NeighborLinkRefining: "true" # Correct the odometry between consecutive nodes by scan matching the lidar
+    RGBD/ProximityBySpace: "true"     # Also look for loop closures with nearby nodes using the lidar (not only by image appearance)
+    RGBD/ProximityPathMaxNeighbors: "10" # Needed for proximity detection with a 2D lidar
+    RGBD/OptimizeFromGraphEnd: "false"   # Keep the map fixed and move the robot on loop closure (map doesn't jump around in RViz)
+    Mem/NotLinkedNodesKept: "false"      # Don't keep nodes that failed to link to the graph
+
+    # REGISTRATION (how the transform between two nodes is computed) combining camera and lidar
+    # Visual gives a good first guess (works even when walls look the same), ICP makes it precise. If loop closures get
+    # rejected in a low-texture world, try "1"
+    Reg/Strategy: "2"         # 0 = visual only, 1 = lidar ICP only, 2 = visual then refined by lidar ICP
+    Reg/Force3DoF: "true"     # Robot is on a flat floor: only x, y, yaw. Matches two_d_mode in ekf.yaml
+
+    # VISUAL FEATURES
+    Kp/MaxFeatures: "500"   # Features per image used to recognise places (loop closure detection)
+    Vis/MinInliers: "15"    # How many features before two places count as same. Lower = more loop closures but more false ones
+    Vis/MaxDepth: "12.0"    # m, ignore features past the camera's ideal depth range (0.7 - 12 m)
+
+    # LIDAR ICP (scan matching)
+    Icp/VoxelSize: "0.05"             # m, downsample the scan before matching
+    Icp/MaxCorrespondenceDistance: "0.1" # m, max distance between matched points
+    Icp/PointToPlane: "true"          # Match points to the wall lines around them, more accurate than point to point
+    Icp/PointToPlaneK: "20"
+    Icp/PointToPlaneRadius: "0"
+    Icp/Iterations: "10"
+    Icp/Epsilon: "0.001"
+
+    # OCCUPANCY GRID (/map)
+    # Both: the lidar covers 360 deg and close range (< 0.7 m), the camera adds obstacles above/below the lidar's single plane
+    # (tabletops, shelves, low objects)
+    Grid/Sensor: "2"                  # 0 = lidar, 1 = depth camera, 2 = both
+    Grid/CellSize: "0.05"             # m per cell
+    Grid/RangeMax: "8.0"              # m, ignore readings further than this (they are less accurate)
+    Grid/RayTracing: "true"           # Mark the space between the robot and a hit as free
+    Grid/MaxGroundHeight: "0.05"      # m, depth points below this are floor (free), not obstacles
+    Grid/MaxObstacleHeight: "1.2"     # m, ignore points above the robot (can adjust) e.g. the ceiling
+
+    # OPTIMIZER
+    Optimizer/GravitySigma: "0"       # Disable IMU gravity constraints, unused in 3DoF mode
