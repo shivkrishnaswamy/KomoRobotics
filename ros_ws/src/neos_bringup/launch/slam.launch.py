@@ -6,6 +6,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 # Starts RTAB-Map SLAM. Shared by the sim and the real robot
+# Needs /scan_filtered, so start lidar_filter.launch.py first
 
 # rtabmap.yaml holds the shared config, but the 4 RTAB-Map parameters use_sim_time, database_path, Mem/IncrementalMemory, 
 # and Mem/InitWMWithAllNodes are set here because they depend on launch args and sim vs real robot differences
@@ -18,7 +19,6 @@ def is_true(value):
 
 def launch_setup(context):
     rtabmap_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'rtabmap.yaml') # Get path for SLAM config file
-    laser_filter_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'laser_filters.yaml') # Lidar filter chain
 
     sim = is_true(LaunchConfiguration('sim').perform(context))         # true = running in Gazebo sim, false = real robot
     slam = is_true(LaunchConfiguration('slam').perform(context))       # true = full SLAM (map + localize), false = freeze map and only localize
@@ -36,20 +36,6 @@ def launch_setup(context):
 
     rtabmap_params = [rtabmap_config, mode_params, {'use_sim_time': sim, 'database_path': database_path}]  # Order matters: later entries override earlier ones
     rtabmap_args = ['-d'] if (new_map and slam) else [] # '-d' (--delete_db_on_start) wipes the database (for new map in SLAM mode)
-
-    # Crops the 360 deg lidar to the front arc so beams hitting the robot's own channel walls never reach SLAM.
-    # Raw /scan in, /scan_filtered out
-    scan_filter = Node(
-        package='laser_filters',
-        executable='scan_to_scan_filter_chain',
-        name='scan_to_scan_filter_chain',
-        output='screen',
-        parameters=[laser_filter_config, {'use_sim_time': sim}],
-        remappings=[
-            ('scan', '/scan'),                   # input: raw 360 deg scan
-            ('scan_filtered', '/scan_filtered'), # output: front arc only
-        ]
-    )
 
     # Bundles the three camera topics into one message so RTAB-Map gets colour, depth and calibration from the same instant
     rgbd_sync = Node(
@@ -83,7 +69,7 @@ def launch_setup(context):
         ]
     )
 
-    nodes = [scan_filter, rgbd_sync, rtabmap]
+    nodes = [rgbd_sync, rtabmap]
 
     # Optional GUI. Shows the camera with detected features, the graph with loop closures, and the 3D map
     if viz:
