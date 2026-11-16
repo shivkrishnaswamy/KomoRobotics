@@ -99,7 +99,7 @@ def generate_launch_description():
         package='foxglove_bridge',
         executable='foxglove_bridge',
         parameters=[{'port': 8765, 'address': '0.0.0.0', 'use_sim_time': True, 'topic_whitelist': ['/tf', '/tf_static', '/odom', '/robot_description', '/camera/camera_info', '/scan', '/cmd_vel',
-                                                                                                    '/imu', '/initialpose', '/joint_states']}])
+                                                                                                    '/imu', '/initialpose', '/joint_states', '/world_markers']}])
 
     # Reads the same SDF world Gazebo loads and publishes it as a MarkerArray on /world_markers,
     # so the walls/objects show up in Foxglove's 3D panel. Gazebo's world origin is where the robot spawned,
