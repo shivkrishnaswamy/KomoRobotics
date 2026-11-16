@@ -15,4 +15,10 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install python nodes as executables into lib/neos_sim so 'ros2 run neos_sim <script>' can find them
+install(
+  PROGRAMS scripts/sdf_to_markers.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package() # Generates the metadata that makes ROS recognize neos_sim as a package

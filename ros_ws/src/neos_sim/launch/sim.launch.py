@@ -20,9 +20,10 @@ def generate_launch_description():
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
     # Runs cmd 'ign gazebo -r worldname' -r starts the simulation running, and worldname is the world file loaded
+    world_file = os.path.join(pkg, 'worlds', 'hallway.sdf')
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')),
-        launch_arguments={'gz_args': f'-r {os.path.join(pkg, "worlds", "hallway.sdf")}'}.items())
+        launch_arguments={'gz_args': f'-r {world_file}'}.items())
 
     # Starts the robot_state_publisher program from the package of the same name
     # robot_description: the URDF text. The program publishes it on the /robot_description topic
@@ -97,6 +98,22 @@ def generate_launch_description():
     foxglove = Node(
         package='foxglove_bridge',
         executable='foxglove_bridge',
-        parameters=[{'port': 8765, 'address': '0.0.0.0', 'use_sim_time': True}])
+        parameters=[{'port': 8765, 'address': '0.0.0.0', 'use_sim_time': True, 'topic_whitelist': ['/tf', '/tf_static', '/odom', '/robot_description', '/camera/camera_info', '/scan', '/cmd_vel',
+                                                                                                    '/imu', '/initialpose', '/joint_states']}])
 
-    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points, ekf, foxglove]) # Hands ros2 launch the list of the programs above and starts all of them
+    # Reads the same SDF world Gazebo loads and publishes it as a MarkerArray on /world_markers,
+    # so the walls/objects show up in Foxglove's 3D panel. Gazebo's world origin is where the robot spawned,
+    # so the markers are published in the 'odom' frame. ground_plane is skipped since Foxglove already draws a grid
+    world_markers = Node(
+        package='neos_sim',
+        executable='sdf_to_markers.py',
+        name='sdf_to_markers',
+        output='screen',
+        parameters=[{
+            'world_file': world_file,
+            'frame_id': 'odom',
+            'exclude_models': ['ground_plane'],
+            'use_sim_time': True,
+        }])
+
+    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points, ekf, foxglove, world_markers]) # Hands ros2 launch the list of the programs above and starts all of them
