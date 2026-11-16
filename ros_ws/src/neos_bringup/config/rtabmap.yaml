@@ -1,7 +1,7 @@
 # RTAB-Map SLAM configuration (rtabmap_slam rtabmap node)
 
 # Builds a map and removes the EKF's long-term drift by recognising places it has seen before (loop closure).
-# Inputs:   /camera/rgbd_image (colour + depth + calibration bundled by rgbd_sync), /scan (2D lidar),
+# Inputs:   /camera/rgbd_image (colour + depth + calibration bundled by rgbd_sync), /scan_filtered (2D lidar, front arc only),
 #           odom -> base_link TF (from the EKF, so the IMU + wheel fusion is the motion prior)
 # Outputs:  map -> odom TF, /map (2D occupancy grid), /rtabmap/cloud_map (3D cloud), the map database (.db)
 # Shared by the real robot and the sim. Keep use_sim_time, database_path and mapping/localization mode out of this file,
@@ -17,7 +17,7 @@
 
     # INPUTS: 
     subscribe_rgbd: true      # /camera/rgbd_image from rgbd_sync
-    subscribe_scan: true      # /scan from the lidar
+    subscribe_scan: true      # /scan_filtered so lidar cropped to the front
     subscribe_depth: false    # Depth comes inside rgbd_image, not on its own
     subscribe_rgb: false
     subscribe_odom_info: false # Only used with RTAB-Map's own odometry nodes, we use the EKF
@@ -56,8 +56,7 @@
     Icp/Epsilon: "0.001"
 
     # OCCUPANCY GRID (/map)
-    # Both: the lidar covers 360 deg and close range (< 0.7 m), the camera adds obstacles above/below the lidar's single plane
-    # (tabletops, shelves, low objects)
+    # The lidar covers a wide front arc and close range (< 0.7 m), the camera adds obstacles above/below the lidar's single plane (tabletops, shelves, low objects)
     Grid/Sensor: "2"                  # 0 = lidar, 1 = depth camera, 2 = both
     Grid/CellSize: "0.05"             # m per cell
     Grid/RangeMax: "8.0"              # m, ignore readings further than this (they are less accurate)

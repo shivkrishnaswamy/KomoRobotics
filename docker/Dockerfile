@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y \
     ros-humble-robot-localization \
     # RTAB-Map SLAM (provides rtabmap, rgbd_sync, and rtabmap_viz)
     ros-humble-rtabmap-ros \
+    # Lidar filter chain that crops /scan to the front arc (scan_to_scan_filter_chain)
+    ros-humble-laser-filters \
     # map_saver_cli that saves the 2D occupancy grid (/map) to a image file for Nav2
     ros-humble-nav2-map-server \
     # colcon build command
