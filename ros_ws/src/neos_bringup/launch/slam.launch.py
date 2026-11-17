@@ -5,94 +5,67 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-# Starts RTAB-Map SLAM. Shared by the sim and the real robot
-# Needs /scan_filtered, so start lidar_filter.launch.py first
+# Starts slam_toolbox 2D lidar SLAM. Shared by the sim and the real robot
+# Uses the lidar only, needs /scan and the odom -> base_link TF (EKF)
 
-# rtabmap.yaml holds the shared config, but the 4 RTAB-Map parameters use_sim_time, database_path, Mem/IncrementalMemory, 
-# and Mem/InitWMWithAllNodes are set here because they depend on launch args and sim vs real robot differences
+# slam_toolbox.yaml holds the shared config, but the slam_toolbox parameters use_sim_time, mode, map_file_name and map_start_at_dock
+# are set here because they depend on launch args and sim vs real robot differences
 
-SIM_DATABASE = '/workspace/maps/neos_sim.db'
-REAL_DATABASE = '/workspace/maps/neos_real.db'
+SIM_MAP = '/workspace/maps/neos_sim'
+REAL_MAP = '/workspace/maps/neos_real'
 
 def is_true(value):
     return value.lower() in ('true', '1', 'yes')
 
 def launch_setup(context):
-    rtabmap_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'rtabmap.yaml') # Get path for SLAM config file
+    filter_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'laser_filters.yaml') # Get path for lidar filter config file
+    slam_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'slam_toolbox.yaml')    # Get path for SLAM config file
 
-    sim = is_true(LaunchConfiguration('sim').perform(context))         # true = running in Gazebo sim, false = real robot
-    slam = is_true(LaunchConfiguration('slam').perform(context))       # true = full SLAM (map + localize), false = freeze map and only localize
-    new_map = is_true(LaunchConfiguration('new_map').perform(context)) # true = delete saved map at startup, false = keep the saved map
-    viz = is_true(LaunchConfiguration('viz').perform(context))         # true = open rtabmap_viz GUI, false = no GUI
+    sim = is_true(LaunchConfiguration('sim').perform(context))   # true = running in Gazebo sim, false = real robot
+    slam = is_true(LaunchConfiguration('slam').perform(context)) # true = full SLAM (map + localize), false = load saved map and only localize
 
     # Where the map is saved. Fixed, not a launch argument, so the sim and real maps always land in the same known files
-    database_path = SIM_DATABASE if sim else REAL_DATABASE
-    os.makedirs(os.path.dirname(database_path), exist_ok=True) # Create folder for database file
+    map_file = SIM_MAP if sim else REAL_MAP
+    os.makedirs(os.path.dirname(map_file), exist_ok=True) # Create folder for map files (serialize_map won't create it)
 
-    mode_params = { # RTAB-Map parameters
-        'Mem/IncrementalMemory': 'true' if slam else 'false',  # Add new snapshots to map (SLAM only)
-        'Mem/InitWMWithAllNodes': 'false' if slam else 'true', # Load the whole saved map into memory at startup (localization only)
-    }
+    if slam:
+        # async processes the newest scan and skips ones that arrive while it's busy, so it never falls behind real time
+        # (sync would queue every scan and lag on a slow computer)
+        executable = 'async_slam_toolbox_node'
+        mode_params = { # slam_toolbox parameters
+            'mode': 'mapping', # Build a new map
+        }
+    else:
+        executable = 'localization_slam_toolbox_node'
+        mode_params = { # slam_toolbox parameters
+            'mode': 'localization',    # Only track the robot's pose in the saved map, don't add to it
+            'map_file_name': map_file, # Saved pose graph to load
+            'map_start_at_dock': True, # Start at the pose where mapping began, so put the robot back there before launching
+        }
 
-    rtabmap_params = [rtabmap_config, mode_params, {'use_sim_time': sim, 'database_path': database_path}]  # Order matters: later entries override earlier ones
-    rtabmap_args = ['-d'] if (new_map and slam) else [] # '-d' (--delete_db_on_start) wipes the database (for new map in SLAM mode)
-
-    # Bundles the three camera topics into one message so RTAB-Map gets colour, depth and calibration from the same instant
-    rgbd_sync = Node(
-        package='rtabmap_sync',
-        executable='rgbd_sync',
-        name='rgbd_sync', # name the running node gets
+    # Crops /scan (360 deg) to the front +-85 deg as /scan_filtered, because wider beams hit the robot's own channel walls
+    lidar_filter = Node(
+        package='laser_filters',
+        executable='scan_to_scan_filter_chain',
+        name='scan_to_scan_filter_chain',
         output='screen',
-        # approx sync is to pair messages whose timestamps are close but not exact. Real camera messages from the three topics can be slightly apart
-        parameters=[{'use_sim_time': sim, 'approx_sync': True, 'sync_queue_size': 10}],
-        remappings=[ # connect topics RTAB-Map expects with actual
-            ('rgb/image', '/camera/image'),             # input: colour image
-            ('depth/image', '/camera/depth_image'),     # input: depth image (meters)
-            ('rgb/camera_info', '/camera/camera_info'), # input: calibration
-            ('rgbd_image', '/camera/rgbd_image'),       # output: the bundle
-        ]
-    )
-
-    # The SLAM node
-    rtabmap = Node(
-        package='rtabmap_slam',
-        executable='rtabmap',
-        name='rtabmap',
-        namespace='rtabmap', # nodes outputs prefixed with /rtabmap, # except /map which is remapped to the standard name Nav2 expects
-        output='screen',
-        parameters=rtabmap_params,
-        arguments=rtabmap_args,
+        parameters=[filter_config, {'use_sim_time': sim}],
         remappings=[
-            ('rgbd_image', '/camera/rgbd_image'),
-            ('scan', '/scan_filtered'),
-            ('map', '/map'),
+            ('scan', '/scan'),                   # input: raw 360 deg scan
+            ('scan_filtered', '/scan_filtered'), # output: scan cropped to front
         ]
     )
 
-    nodes = [rgbd_sync, rtabmap]
+    # The SLAM node. Publishes /map and the map -> odom TF
+    slam_toolbox = Node(
+        package='slam_toolbox',
+        executable=executable,
+        name='slam_toolbox',
+        output='screen',
+        parameters=[slam_config, mode_params, {'use_sim_time': sim}], # Order matters: later entries override earlier ones
+    )
 
-    # Optional GUI. Shows the camera with detected features, the graph with loop closures, and the 3D map
-    if viz:
-        nodes.append(Node(
-            package='rtabmap_viz',
-            executable='rtabmap_viz',
-            name='rtabmap_viz',
-            namespace='rtabmap',
-            output='screen',
-            parameters=[{
-                'use_sim_time': sim,
-                'frame_id': 'base_link',
-                'odom_frame_id': 'odom',
-                'subscribe_rgbd': True,
-                'subscribe_scan': True,
-                'subscribe_odom_info': False,
-                'approx_sync': True,
-            }],
-            remappings=[
-                ('rgbd_image', '/camera/rgbd_image'),
-                ('scan', '/scan_filtered'),
-            ]
-        ))
+    nodes = [lidar_filter, slam_toolbox]
 
     return nodes
 
@@ -102,9 +75,5 @@ def generate_launch_description():
                               description='Are you running SLAM in the Gazebo sim or on the real robot'),
         DeclareLaunchArgument('slam', default_value='true',
                               description='Do you want full SLAM or just localization on an existing map'),
-        DeclareLaunchArgument('new_map', default_value='false',
-                              description='Do you want to delete the saved map when running SLAM'),
-        DeclareLaunchArgument('viz', default_value='true',
-                              description='Do you want the RTAB-Map GUI'),
         OpaqueFunction(function=launch_setup),
     ])
