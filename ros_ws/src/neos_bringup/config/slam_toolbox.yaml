@@ -1,24 +1,21 @@
 # slam_toolbox configuration (pure 2D lidar SLAM)
 
 # Builds a 2D occupancy grid from the lidar ONLY. No camera data or camera frames are used.
-# Inputs:  /scan_filtered (front +-85 deg of the lidar, see laser_filters.yaml) and the odom -> base_link TF (from the EKF)
+# Inputs:  /scan_filtered and the odom -> base_link TF (from the EKF)
 # Outputs: /map (nav_msgs/OccupancyGrid) and the map -> odom TF
-# Started from the defaults in slam_toolbox's mapper_params_online_async.yaml, with the values that matter for
-# the Neos changed and explained.
 # Shared by the real robot and the sim. Keep use_sim_time out of this file, set it in each launch file.
 # mode and map_file_name are also set in slam.launch.py (mapping vs localization), not here.
 
-slam_toolbox:                   # Must match the node name in slam.launch.py
+slam_toolbox:
   ros__parameters:
-
     # ---------------- Solver (slam_toolbox defaults) ----------------
     # Ceres optimizes the pose graph whenever a loop closure is found
-    solver_plugin: solver_plugins::CeresSolver      # Optimizer backend that adjusts all graph node poses to agree with each other
-    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY     # How Ceres solves each step's linear system. Sparse suits pose graphs (each node links to few others)
-    ceres_preconditioner: SCHUR_JACOBI              # Conditions the linear system so the solver converges in fewer iterations
-    ceres_trust_strategy: LEVENBERG_MARQUARDT       # Nonlinear optimization algorithm used to minimize the graph error
-    ceres_dogleg_type: TRADITIONAL_DOGLEG           # Only used if ceres_trust_strategy is DOGLEG, so ignored here
-    ceres_loss_function: None                       # None = plain squared error. HuberLoss/CauchyLoss would down-weight bad (outlier) constraints
+    solver_plugin: solver_plugins::CeresSolver    # Optimizer backend that adjusts all graph node poses to agree with each other
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY   # How Ceres solves each step's linear system. Sparse suits pose graphs (each node links to few others)
+    ceres_preconditioner: SCHUR_JACOBI            # Conditions the linear system so the solver converges in fewer iterations
+    ceres_trust_strategy: LEVENBERG_MARQUARDT     # Nonlinear optimization algorithm used to minimize the graph error
+    ceres_dogleg_type: TRADITIONAL_DOGLEG         # Only used if ceres_trust_strategy is DOGLEG, so ignored here
+    ceres_loss_function: None                     # None = plain squared error. HuberLoss/CauchyLoss would down-weight bad (outlier) constraints
 
     # ---------------- Frames and topics ----------------
     odom_frame: odom            # EKF publishes odom -> base_link. slam_toolbox reads it as its motion prior
@@ -39,18 +36,15 @@ slam_toolbox:                   # Must match the node name in slam.launch.py
 
     # ---------------- Map ----------------
     resolution: 0.05          # 5 cm grid cells. Standard for indoor nav, fine enough for doorways
-    min_laser_range: 0.05     # Slightly above the STL-27L's 3 cm minimum to drop near-field noise
-    max_laser_range: 12.0     # Datasheet says 25 m, but only ~10 m on dark surfaces. Long, unreliable returns make
-                              # a noisy map, so cap it. Also bounds how far the grid is ray-traced each scan
+    min_laser_range: 0.05     # Slightly above our lidars 3 cm min to drop near-field noise
+    max_laser_range: 12.0     # Cap range from lidars quoted 25m since far distances can be noisy
 
     # ---------------- Scan matching ----------------
     # Each new scan is aligned against recent scans to correct the odometry guess of where the robot is
     use_scan_matching: true          # true = refine each pose by scan matching. false = trust odometry blindly
     use_scan_barycenter: true        # Use the centroid of the scan points (not the sensor origin) when measuring distance between scans
-    # A new graph node is only added after the robot moves this much. Lower than the 0.5/0.5 defaults because
-    # we only see the front 170 deg, so consecutive nodes need more overlap to match well
-    minimum_travel_distance: 0.3     # meters
-    minimum_travel_heading: 0.3      # radians (~17 deg)
+    minimum_travel_distance: 0.3     # meters, new graph node added after robot moves this much
+    minimum_travel_heading: 0.3      # radians (~17 deg), same as above for rotation
     scan_buffer_size: 10                         # Number of recent scans kept in the buffer that new scans are matched against
     scan_buffer_maximum_scan_distance: 10.0      # Scans farther than this (m) from the current pose are dropped from the buffer
     link_match_minimum_response_fine: 0.1        # Min match score (0-1) to link a new scan to nearby graph nodes
@@ -63,8 +57,8 @@ slam_toolbox:                   # Must match the node name in slam.launch.py
     fine_search_angle_offset: 0.00349   # Angle range (rad, +-0.2 deg) searched in the fine matching pass
     coarse_search_angle_offset: 0.349   # Angle range (rad, +-20 deg) searched in the coarse matching pass
     coarse_angle_resolution: 0.0349     # Angle step (rad, 2 deg) used in the coarse pass
-    minimum_angle_penalty: 0.9       # Floor on the rotation penalty so a match is never scored down below this factor
-    minimum_distance_penalty: 0.5    # Floor on the distance penalty, same idea
+    minimum_angle_penalty: 0.9       # Minimum on the rotation penalty so a match is never scored down below this factor
+    minimum_distance_penalty: 0.5    # Min on the distance penalty, same thing
     use_response_expansion: true     # If no good match is found, retry with a bigger search window
 
     # ---------------- Loop closure ----------------

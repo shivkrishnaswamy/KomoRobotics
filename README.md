@@ -52,3 +52,8 @@ FOR REAL ROBOT\
 
 Can add `viz:=false` to turn off rtabmap gui\
 Note: Supplying launch arguments `slam:=false new_map:=true` at the same time either in sim or real is pointless (can't localize in a blank map)
+sim\
+ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/neos_sim'}"
+
+real robot\
+ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/neos_real'}"
