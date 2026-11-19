@@ -68,42 +68,42 @@
       <self_collide>false</self_collide>
     </model>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/construction cone/3</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone/3</uri>
       <name>Construction Cone</name>
       <pose>-2.35008 -0.240654 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/construction cone/3</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone/3</uri>
       <name>Construction Cone_0</name>
       <pose>-0.791856 -3.11453 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/construction cone/3</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Cone/3</uri>
       <name>Construction Cone_1</name>
       <pose>1.07044 3.82935 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/construction barrel/4</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel/4</uri>
       <name>Construction Barrel</name>
       <pose>3.17773 -1.63668 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/construction barrel/4</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel/4</uri>
       <name>Construction Barrel_0</name>
       <pose>-1.51907 2.63666 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/construction barrel/4</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Construction Barrel/4</uri>
       <name>Construction Barrel_1</name>
       <pose>6.80628 4.6399 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/sofa/3</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Sofa/3</uri>
       <name>Sofa</name>
       <pose>-2.95049 -2.58981 0 0 -0 0</pose>
     </include>
     <include>
-      <uri>file:///root/.ignition/fuel/fuel.gazebosim.org/openrobotics/models/sofa/3</uri>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Sofa/3</uri>
       <name>Sofa_0</name>
       <pose>-3.34811 1.22694 0 0 -0 0</pose>
     </include>
