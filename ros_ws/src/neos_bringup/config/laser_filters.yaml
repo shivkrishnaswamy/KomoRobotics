@@ -1,0 +1,17 @@
+# Lidar filter chain
+# The lidar is 360 deg but sits in a channel through the bottom of the body that is open at the front and back.
+# Beams that leave sideways hit the channel's inner walls, which move with the robot. Those self-hits corrupt scan
+# matching (they make the robot look like it isn't moving) and leave a ring of fake obstacles in /map. Keeping only the
+# front arc removes them.
+# Input:  /scan (raw, 360 deg)
+# Output: /scan_filtered (front arc only), used by SLAM and navigation
+
+scan_to_scan_filter_chain:   # Node name
+  ros__parameters:
+    # Angles are in lidar_link: 0 = straight ahead (+x), positive = counter-clockwise (left), negative = right.
+    filter1:
+      name: front_arc
+      type: laser_filters/LaserScanAngularBoundsFilter # Keeps the points INSIDE the bounds and crops the scan to that arc
+      params:
+        lower_angle: -1.4835   # rad, -85 deg (right)
+        upper_angle:  1.4835   # rad, +85 deg (left)
