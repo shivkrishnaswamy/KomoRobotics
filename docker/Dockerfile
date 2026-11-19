@@ -37,6 +37,8 @@ RUN apt-get update && apt-get install -y \
     ros-humble-laser-filters \
     # map_saver_cli that saves the 2D occupancy grid (/map) to a image file for Nav2
     ros-humble-nav2-map-server \
+    # 2D lidar SLAM (pose graph + loop closure). Builds /map and publishes map -> odom
+    ros-humble-slam-toolbox \
     # colcon build command
     python3-colcon-common-extensions \
     # Other useful tools
