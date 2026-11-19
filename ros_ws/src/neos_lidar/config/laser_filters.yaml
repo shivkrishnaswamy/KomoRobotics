@@ -6,11 +6,11 @@
 # Input:  /scan (raw, 360 deg)
 # Output: /scan_filtered (front arc only), used by SLAM and navigation
 
-scan_to_scan_filter_chain:   # Node name
+lidar_crop:   # Node name
   ros__parameters:
     # Angles are in lidar_link: 0 = straight ahead (+x), positive = counter-clockwise (left), negative = right.
     filter1:
-      name: front_arc
+      name: front_crop
       type: laser_filters/LaserScanAngularBoundsFilter # Keeps the points INSIDE the bounds and crops the scan to that arc
       params:
         lower_angle: -1.4835   # rad, -85 deg (right)
