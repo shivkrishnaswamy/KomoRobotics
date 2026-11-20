@@ -1,5 +1,4 @@
-# Simulation Reference Document
-The komo_sim directory contains the files involved in setting up the Gazebo simulation environment
+# Reference Document
 
 ## File Descriptions
 #### package.xml

@@ -3,7 +3,7 @@
 # Fuses wheel odometry (/odom) and the IMU (/imu) into one smoother odometry estimate.
 # Publishes: /odometry/filtered and the odom -> base_link TF
 # SLAM (later) publishes map -> odom on top of this
-# Shared by the real robot and the sim. Keep use_sim_time out of this file, set it in each launch file
+# Shared by the real robot and the sim
 
 # config order (true fuses that field):
 #      x,     y,     z,       position
@@ -12,7 +12,7 @@
 #     vroll, vpitch, vyaw,    angular velocity
 #     ax,    ay,    az        linear acceleration
 
-ekf_filter_node:
+ekf:
   ros__parameters:
     frequency: 50.0          # EKF output rate (Hz). Match the /odom rate
     sensor_timeout: 0.1      # If no input for this long, predict forward without a measurement

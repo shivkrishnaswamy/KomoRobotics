@@ -3,8 +3,8 @@
 # Builds a 2D occupancy grid from the lidar ONLY. No camera data or camera frames are used.
 # Inputs:  /scan_filtered and the odom -> base_link TF (from the EKF)
 # Outputs: /map (nav_msgs/OccupancyGrid) and the map -> odom TF
-# Shared by the real robot and the sim. Keep use_sim_time out of this file, set it in each launch file.
-# mode and map_file_name are also set in slam.launch.py (mapping vs localization), not here.
+# Shared by the real robot and the sim
+# mode and map_file_name are also set in slam_toolbox.launch.py (mapping vs localization), not here.
 
 slam_toolbox:
   ros__parameters:
