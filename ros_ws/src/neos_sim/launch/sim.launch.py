@@ -13,8 +13,7 @@ from launch_ros.descriptions import ComposableNode
 # 'ros2 launch' looks for a function with exactly this name and calls it
 def generate_launch_description():
     pkg = get_package_share_directory('neos_sim')    # Looks up neos_sim and returns /workspace/install/neos_sim/share/neos_sim
-    xacro_file = os.path.join(pkg, 'urdf', 'neos_master.urdf.xacro.xml') # Appends urdf/neos_master.urdf.xacro.xml to path
-    ekf_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'ekf.yaml') # EKF config
+    xacro_file = os.path.join(get_package_share_directory('neos_desc'), 'urdf', 'neos_master.urdf.xacro.xml') # Appends urdf/neos_master.urdf.xacro.xml to path
 
     # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
     robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
@@ -79,15 +78,4 @@ def generate_launch_description():
                 ]),
         ])
 
-    # Describes the EKF program 'ekf_node' inside the ROS package 'robot_localization'
-    # Gives the running node the name 'ekf_filter_node', and tells it to print to the screen
-    # EKF fuses /odom + /imu into /odometry/filtered and publishes the odom -> base_link TF.
-    # name must match the top-level key in ekf.yaml
-    ekf = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        output='screen',
-        parameters=[ekf_config, {'use_sim_time': True}])
-
-    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points, ekf]) # Hands ros2 launch the list of the programs above and starts all of them
+    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points]) # Hands ros2 launch the list of the programs above and starts all of them
