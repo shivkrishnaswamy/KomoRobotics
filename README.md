@@ -36,24 +36,14 @@ rviz2
 ```
 
 #### Lidar filter (crops /scan to the front of the robot as /scan_filtered, required by SLAM)
-`ros2 launch neos_bringup lidar_filter.launch.py sim:=true` Sim\
-`ros2 launch neos_bringup lidar_filter.launch.py` Real robot
+`ros2 launch neos_lidar lidar_filter.launch.py sim:=true` Sim\
+`ros2 launch neos_lidar lidar_filter.launch.py` Real robot
 
 #### SLAM
-FOR SIMULATION ROBOT\
-`ros2 launch neos_bringup slam.launch.py sim:=true new_map:=true` SLAM new sim world from scratch (new map)\
-`ros2 launch neos_bringup slam.launch.py sim:=true` SLAM but continue mapping the sim world (from saved map)\
-`ros2 launch neos_bringup slam.launch.py sim:=true slam:=false` Localize in the finished sim map
-
-FOR REAL ROBOT\
-`ros2 launch neos_bringup slam.launch.py new_map:=true` SLAM new real space from scratch\
-`ros2 launch neos_bringup slam.launch.py` SLAM but continue mapping the real space (from saved map)\
-`ros2 launch neos_bringup slam.launch.py slam:=false` Localize in the finished real map
+`ros2 launch neos_slam rtabmap.launch.py wipe_map:=true` SLAM from scratch (new map)\
+`ros2 launch neos_slam rtabmap.launch.py` SLAM but continue mapping (from saved map)\
+`ros2 launch neos_slam rtabmap.launch.py map:=false` Localize in the finished map
 
 Can add `viz:=false` to turn off rtabmap gui\
-Note: Supplying launch arguments `slam:=false new_map:=true` at the same time either in sim or real is pointless (can't localize in a blank map)
-sim\
-ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/neos_sim'}"
-
-real robot\
-ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/neos_real'}"
+Note: Supplying launch arguments `map:=false wipe_map:=true` at the same time is pointless (can't localize in a blank map)
+ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/neos'}"
