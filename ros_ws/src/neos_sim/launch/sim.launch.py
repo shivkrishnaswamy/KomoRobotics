@@ -4,32 +4,24 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command
-from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.actions import Node, SetParameter
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
-# 'ros2 launch' looks for a function with exactly this name and calls it
+# Helper function
+def include(package, launch_file):
+    return IncludeLaunchDescription(PythonLaunchDescriptionSource(
+        os.path.join(get_package_share_directory(package), 'launch', launch_file)))
+
+# Entry point for the whole sim. Shared launch files (also used on the real robot) don't set use_sim_time,
+# so it is set once here and applies to every node in every launch file included below
 def generate_launch_description():
     pkg = get_package_share_directory('neos_sim')    # Looks up neos_sim and returns /workspace/install/neos_sim/share/neos_sim
-    xacro_file = os.path.join(get_package_share_directory('neos_desc'), 'urdf', 'neos_master.urdf.xacro.xml') # Appends urdf/neos_master.urdf.xacro.xml to path
-
-    # Runs xacro <path> and keeps what it prints, which is the plain URDF text. ROS runs the command when the launch starts
-    robot_desc = ParameterValue(Command(['xacro ', xacro_file]), value_type=str)
 
     # Runs cmd 'ign gazebo -r worldname' -r starts the simulation running, and worldname is the world file loaded
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')),
         launch_arguments={'gz_args': f'-r {os.path.join(pkg, "worlds", "hallway.sdf")}'}.items())
-
-    # Starts the robot_state_publisher program from the package of the same name
-    # robot_description: the URDF text. The program publishes it on the /robot_description topic
-    # use_sim_time: True: use Gazebo’s clock
-    rsp = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[{'robot_description': robot_desc, 'use_sim_time': True}])
 
     # Reads /robot_description and spawns the robot into Gazebo world
     # -z 0.12: spawn base_link above ground so the robot drops onto the floor
@@ -78,4 +70,10 @@ def generate_launch_description():
                 ]),
         ])
 
-    return LaunchDescription([gazebo, rsp, spawn, bridge, depth_to_points]) # Hands ros2 launch the list of the programs above and starts all of them
+    return LaunchDescription([ # Hands ros2 launch the list of the programs above and starts all of them
+        SetParameter(name='use_sim_time', value=True),   # Must come before the includes, it only applies to nodes after it
+        include('neos_desc', 'rsp.launch.py'),           # Starts robot state publisher
+        include('neos_ekf', 'ekf.launch.py'),            # Fuses /odom + /imu, publishes odom -> base_link
+        include('neos_lidar', 'lidar_filter.launch.py'), # Filters /scan to to isolate scan portion not hitting the robot interior
+        gazebo, spawn, bridge, depth_to_points,
+    ])
