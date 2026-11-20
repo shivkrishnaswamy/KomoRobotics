@@ -24,6 +24,7 @@ source install/setup.bash
 ```
 ros2 launch neos_sim sim.launch.py
 ```
+This also launches the sim, EKF, lidar-crop, and robot state publisher
 
 #### Open teleop keyboard to drive robot
 ```
@@ -35,15 +36,18 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 rviz2
 ```
 
-#### Lidar filter (crops /scan to the front of the robot as /scan_filtered, required by SLAM)
-`ros2 launch neos_lidar lidar_filter.launch.py sim:=true` Sim\
-`ros2 launch neos_lidar lidar_filter.launch.py` Real robot
+#### Run SLAM
+Full SLAM (mapping)
+```
+ros2 launch neos_slam slam_toolbox.launch.py map:=true
+```
 
-#### SLAM
-`ros2 launch neos_slam rtabmap.launch.py wipe_map:=true` SLAM from scratch (new map)\
-`ros2 launch neos_slam rtabmap.launch.py` SLAM but continue mapping (from saved map)\
-`ros2 launch neos_slam rtabmap.launch.py map:=false` Localize in the finished map
+Save the map before stopping mapping
+```
+ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/toolbox/map'}"
+```
 
-Can add `viz:=false` to turn off rtabmap gui\
-Note: Supplying launch arguments `map:=false wipe_map:=true` at the same time is pointless (can't localize in a blank map)
-ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '/workspace/maps/neos'}"
+Just localization
+```
+ros2 launch neos_slam slam_toolbox.launch.py map:=false
+```
