@@ -2,7 +2,7 @@
 <package format="3">
   <name>neos_slam</name>
   <version>0.0.1</version>
-  <description>Komo Robotics robot SLAM</description>
+  <description>Neos SLAM</description>
   <maintainer email="help@unemployed.com">you</maintainer>
   <license>MIT</license>
 

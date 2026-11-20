@@ -2,7 +2,7 @@
 <package format="3">
   <name>neos_desc</name>
   <version>0.0.1</version>
-  <description>Komo Robotics robot description</description>
+  <description>Neos description</description>
   <maintainer email="help@unemployed.com">you</maintainer>
   <license>MIT</license>
 

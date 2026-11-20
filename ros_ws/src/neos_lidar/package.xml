@@ -2,7 +2,7 @@
 <package format="3">
   <name>neos_lidar</name>
   <version>0.0.1</version>
-  <description>Komo Robotics robot lidar</description>
+  <description>Neos lidar</description>
   <maintainer email="help@unemployed.com">you</maintainer>
   <license>MIT</license>
 
