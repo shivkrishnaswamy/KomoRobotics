@@ -1,11 +1,11 @@
 # RTAB-Map SLAM configuration (rtabmap_slam rtabmap node)
 
 # Builds a map and removes the EKF's long-term drift by recognising places it has seen before (loop closure).
-# Inputs:   /camera/rgbd_image (colour + depth + calibration bundled by rgbd_sync), /scan_filtered (2D lidar, front arc only),
+# Inputs:   /camera/rgbd_image (colour + depth + calibration bundled by camera_sync), /scan_filtered (2D lidar, front arc only),
 #           odom -> base_link TF (from the EKF, so the IMU + wheel fusion is the motion prior)
 # Outputs:  map -> odom TF, /map (2D occupancy grid), /rtabmap/cloud_map (3D cloud), the map database (.db)
 # Shared by the real robot and the sim. Keep use_sim_time, database_path and mapping/localization mode out of this file,
-# they are set in slam.launch.py
+# they are set in rtabmap.launch.py
 
 /**:    # "/**" applies these to the node it is given to regardless of its namespace (the node runs in the /rtabmap namespace)
   ros__parameters:
@@ -16,7 +16,7 @@
     publish_tf: true      # Publish map -> odom (the drift correction)
 
     # INPUTS: 
-    subscribe_rgbd: true      # /camera/rgbd_image from rgbd_sync
+    subscribe_rgbd: true      # /camera/rgbd_image from camera_sync
     subscribe_scan: true      # /scan_filtered so lidar cropped to the front
     subscribe_depth: false    # Depth comes inside rgbd_image, not on its own
     subscribe_rgb: false

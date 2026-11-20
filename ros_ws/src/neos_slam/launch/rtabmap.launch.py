@@ -8,43 +8,37 @@ from launch_ros.actions import Node
 # Starts RTAB-Map SLAM. Shared by the sim and the real robot
 # Needs /scan_filtered, so start lidar_filter.launch.py first
 
-# rtabmap.yaml holds the shared config, but the 4 RTAB-Map parameters use_sim_time, database_path, Mem/IncrementalMemory, 
-# and Mem/InitWMWithAllNodes are set here because they depend on launch args and sim vs real robot differences
+# rtabmap.yaml holds the shared config, but the 3 RTAB-Map parameters database_path, Mem/IncrementalMemory, 
+# and Mem/InitWMWithAllNodes are set here because they depend on launch args
 
-SIM_DATABASE = '/workspace/maps/neos_sim.db'
-REAL_DATABASE = '/workspace/maps/neos_real.db'
+MAP = '/workspace/maps/rtab/map.db'
 
 def is_true(value):
     return value.lower() in ('true', '1', 'yes')
 
 def launch_setup(context):
-    rtabmap_config = os.path.join(get_package_share_directory('neos_bringup'), 'config', 'rtabmap.yaml') # Get path for SLAM config file
-
-    sim = is_true(LaunchConfiguration('sim').perform(context))         # true = running in Gazebo sim, false = real robot
-    slam = is_true(LaunchConfiguration('slam').perform(context))       # true = full SLAM (map + localize), false = freeze map and only localize
-    new_map = is_true(LaunchConfiguration('new_map').perform(context)) # true = delete saved map at startup, false = keep the saved map
+    mapping = is_true(LaunchConfiguration('map').perform(context))     # true = full SLAM (map + localize), false = freeze map and only localize
+    wipe_map = is_true(LaunchConfiguration('wipe_map').perform(context)) # true = delete saved map at startup, false = continue mapping saved map
     viz = is_true(LaunchConfiguration('viz').perform(context))         # true = open rtabmap_viz GUI, false = no GUI
 
-    # Where the map is saved. Fixed, not a launch argument, so the sim and real maps always land in the same known files
-    database_path = SIM_DATABASE if sim else REAL_DATABASE
-    os.makedirs(os.path.dirname(database_path), exist_ok=True) # Create folder for database file
+    rtabmap_config = os.path.join(get_package_share_directory('neos_slam'), 'config', 'rtabmap.yaml') # Get path for SLAM config file
+    os.makedirs(os.path.dirname(MAP), exist_ok=True) # Create folder for database file
 
     mode_params = { # RTAB-Map parameters
-        'Mem/IncrementalMemory': 'true' if slam else 'false',  # Add new snapshots to map (SLAM only)
-        'Mem/InitWMWithAllNodes': 'false' if slam else 'true', # Load the whole saved map into memory at startup (localization only)
+        'Mem/IncrementalMemory': 'true' if mapping else 'false',  # Add new snapshots to map (SLAM only)
+        'Mem/InitWMWithAllNodes': 'false' if mapping else 'true', # Load the whole saved map into memory at startup (localization only)
     }
-
-    rtabmap_params = [rtabmap_config, mode_params, {'use_sim_time': sim, 'database_path': database_path}]  # Order matters: later entries override earlier ones
-    rtabmap_args = ['-d'] if (new_map and slam) else [] # '-d' (--delete_db_on_start) wipes the database (for new map in SLAM mode)
+    rtabmap_params = [rtabmap_config, mode_params, {'database_path': MAP}]  # Order matters: later entries override earlier ones
+    rtabmap_args = ['-d'] if (wipe_map and mapping) else [] # '-d' (--delete_db_on_start) wipes the database (for new map in SLAM mode)
 
     # Bundles the three camera topics into one message so RTAB-Map gets colour, depth and calibration from the same instant
-    rgbd_sync = Node(
+    camera_sync = Node(
         package='rtabmap_sync',
         executable='rgbd_sync',
-        name='rgbd_sync', # name the running node gets
+        name='camera_sync', # name the running node gets
         output='screen',
         # approx sync is to pair messages whose timestamps are close but not exact. Real camera messages from the three topics can be slightly apart
-        parameters=[{'use_sim_time': sim, 'approx_sync': True, 'sync_queue_size': 10}],
+        parameters=[{'approx_sync': True, 'sync_queue_size': 10}],
         remappings=[ # connect topics RTAB-Map expects with actual
             ('rgb/image', '/camera/image'),             # input: colour image
             ('depth/image', '/camera/depth_image'),     # input: depth image (meters)
@@ -69,7 +63,7 @@ def launch_setup(context):
         ]
     )
 
-    nodes = [rgbd_sync, rtabmap]
+    nodes = [camera_sync, rtabmap]
 
     # Optional GUI. Shows the camera with detected features, the graph with loop closures, and the 3D map
     if viz:
@@ -80,7 +74,6 @@ def launch_setup(context):
             namespace='rtabmap',
             output='screen',
             parameters=[{
-                'use_sim_time': sim,
                 'frame_id': 'base_link',
                 'odom_frame_id': 'odom',
                 'subscribe_rgbd': True,
@@ -98,11 +91,9 @@ def launch_setup(context):
 
 def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument('sim', default_value='false',
-                              description='Are you running SLAM in the Gazebo sim or on the real robot'),
-        DeclareLaunchArgument('slam', default_value='true',
+        DeclareLaunchArgument('map', default_value='true',
                               description='Do you want full SLAM or just localization on an existing map'),
-        DeclareLaunchArgument('new_map', default_value='false',
+        DeclareLaunchArgument('wipe_map', default_value='false',
                               description='Do you want to delete the saved map when running SLAM'),
         DeclareLaunchArgument('viz', default_value='true',
                               description='Do you want the RTAB-Map GUI'),

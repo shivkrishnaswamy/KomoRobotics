@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>neos_bringup</name>
+  <name>neos_slam</name>
   <version>0.0.1</version>
-  <description>Komo Robotics robot bringup</description>
+  <description>Komo Robotics robot SLAM</description>
   <maintainer email="help@unemployed.com">you</maintainer>
   <license>MIT</license>
 
@@ -13,7 +13,6 @@
   <exec_depend>rtabmap_sync</exec_depend>
   <exec_depend>rtabmap_viz</exec_depend>
   <exec_depend>slam_toolbox</exec_depend>
-  <exec_depend>laser_filters</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
