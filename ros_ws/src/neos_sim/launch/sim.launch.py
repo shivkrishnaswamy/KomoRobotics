@@ -44,7 +44,18 @@ def generate_launch_description():
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo', # /camera/camera_info: Camera calibration data
             '/scan@sensor_msgs/msg/LaserScan[ignition.msgs.LaserScan', # /scan: 2D lidar scan
             '/imu@sensor_msgs/msg/Imu[ignition.msgs.IMU', # /imu: orientation, angular velocity, linear acceleration
+        ],
+        # Remap Gazebo's /odom and /imu since sim_odometry_noise will add error and covariance, then republish
+        remappings=[
+            ('/odom', '/sim/odom_raw'),
+            ('/imu', '/sim/imu_raw'),
         ])
+
+    # Adds covariance + wheel calibration error / slip so the EKF and SLAM see real-robot-like inputs.
+    sensor_noise_model = Node(
+        package='neos_sim',
+        executable='sim_odometry_noise',
+        name='sim_odometry_noise')
 
     # In ROS 2, robot frames are x forward, y left, z up and the camera optical frames are z forward, x right, y down. On a real robot this isn't an issue, 
     # because the camera driver produces data in optical coordinates and the transform adjusts correctly. In Gazebo, the RGB-D sensor computes its point cloud 
@@ -75,5 +86,5 @@ def generate_launch_description():
         include('neos_desc', 'rsp.launch.py'),           # Starts robot state publisher
         include('neos_ekf', 'ekf.launch.py'),            # Fuses /odom + /imu, publishes odom -> base_link
         include('neos_lidar', 'lidar_filter.launch.py'), # Filters /scan to to isolate scan portion not hitting the robot interior
-        gazebo, spawn, bridge, depth_to_points,
+        gazebo, spawn, bridge, sensor_noise_model, depth_to_points,
     ])

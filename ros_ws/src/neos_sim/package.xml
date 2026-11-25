@@ -12,6 +12,11 @@
   <exec_depend>ros_gz_bridge</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
   <exec_depend>depth_image_proc</exec_depend>
+  <!-- needed to build and run the sim_odometry_noise node -->
+  <depend>rclcpp</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
+
   <exec_depend>neos_desc</exec_depend>
   <exec_depend>neos_ekf</exec_depend>
   <exec_depend>neos_lidar</exec_depend>
