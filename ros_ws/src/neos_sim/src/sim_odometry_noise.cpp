@@ -24,8 +24,8 @@ const double wheelRadiusError = 0.02;
 const double wheelSeparationError = 0.04;
 
 // Speed multipliers which add the error from the error variables above
-const double vScale = 1.0 + wheelRadiusError;
-const double wScale = (1.0 + wheelRadiusError) / (1.0 + wheelSeparationError);
+const double linXScale = 1.0 + wheelRadiusError;
+const double angZScale = (1.0 + wheelRadiusError) / (1.0 + wheelSeparationError);
 
 // Standard deviations for odometry twist covariance matrix construction, sized to cover the errors above at our speed limits
 const double odomVxStddev = 0.02;    // m/s
@@ -86,9 +86,9 @@ class SimOdometryNoise : public rclcpp::Node
     void onOdom(nav_msgs::msg::Odometry::UniquePtr msg)
     {
       // Get the forward velocity from the message, scale it for error, then add slip
-      const double lin_x_mod = addSlip(msg->twist.twist.linear.x * vScale);
+      const double lin_x_mod = addSlip(msg->twist.twist.linear.x * linXScale);
       // Get the angular velocity around vertical axis (turn rate), and do the same
-      const double ang_z_mod = addSlip(msg->twist.twist.angular.z * wScale);
+      const double ang_z_mod = addSlip(msg->twist.twist.angular.z * angZScale);
       // Reset the forward speed and turn rate with the noisy values
       msg->twist.twist.linear.x = lin_x_mod;
       msg->twist.twist.angular.z = ang_z_mod;
